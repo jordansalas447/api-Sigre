@@ -1,0 +1,17 @@
+Se modifico los procedimientos agregando and alim_etiqueta is not null
+
+-- vanos
+exec sp_GetReportGapsByFeeder
+
+-- seds 
+exec sp_GetReportSEDs_AByFeeder 
+exec sp_GetReportSEDs_CByFeeder 
+exec sp_GetReportSEDs_SByFeeder 
+
+-- postes
+exec sp_GetReportPostsByFeeder 
+
+
+agregado 
+
+exec [sp_GetAlimentadoresEtiqueta]
