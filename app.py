@@ -153,6 +153,29 @@ def buscarelemento():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500    
+    
+
+@app.route('/listardeficienciasxelemento', methods=['GET'])
+def listardeficienciasxelemento():
+    try:
+        idelemento = request.args.get('idelemento')
+        tipoelemento = request.args.get('tipoelemento')
+
+        if not idelemento:
+            return jsonify({"error": "codIns es requerido"}), 400
+
+        # ----------- CONSULTA 1 -------------------
+        cursor.execute("exec sp_GetDeficienciasPorElemento ? , ?", tipoelemento , idelemento)
+        
+        columns = [column[0] for column in cursor.description]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        return jsonify({
+            "data": rows
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500    
 
 
 

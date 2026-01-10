@@ -1,2 +1,7 @@
 Flask
 flask-cors
+pyodbc
+openpyxl
+pandas
+python-dateutil
+xlsxwriter

@@ -23,6 +23,16 @@ class Config:
 #     r"Connection Timeout=30"
 
 
+#    "DRIVER={ODBC Driver 18 for SQL Server};"
+#    "SERVER=host.docker.internal\\SQLEXPRESS;"
+#    "DATABASE=sigre;"
+#    "UID=sa;"
+#    "PWD=123456789;"
+#    "Encrypt=yes;"
+#    "TrustServerCertificate=yes;"
+#    "Connection Timeout=30;"
+
+
 #   r"Driver={ODBC Driver 18 for SQL Server};"
 #   r"Server=.\SQLEXPRESS;"
 #   r"Database=sigre;"
