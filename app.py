@@ -9,6 +9,11 @@ from config import get_connection
 app = Flask(__name__)
 CORS(app)
 
+
+@app.route('/', methods=['GET'])
+def Inicio():
+    return "Hola Mundo"
+
 @app.route('/ExportarReportePresentacionSeal', methods=['POST'])
 def ExportarReportePresentacionSeal():
 
@@ -198,6 +203,95 @@ def buscarelemento():
         #cursor.close()
         #cnxn.close()  
     
+
+@app.route('/historialinspecciones', methods=['GET'])
+def historialinspecciones():
+    try:
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
+        fecha = request.args.get('fecha')
+
+        if not fecha:
+            return jsonify({"error": "fecha es requerido"}), 400
+
+        # ----------- CONSULTA 1 -------------------
+        query = """
+        select 
+            d.DEFI_Interno,
+            case
+                when d.TIPI_Interno <> 0 then 'Deficiencia'
+                else 'Sin Deficiencia'
+            end as Estado,
+            d.DEFI_CodigoElemento,
+            c.CODI_Codigo,
+            d.DEFI_Latitud,
+            d.DEFI_Longitud,
+            d.DEFI_NumSuministro,
+            d.DEFI_TipoElemento,
+            d.DEFI_FecRegistro,
+            d.DEFI_Observacion,
+            d.DEFI_EstadoCriticidad,
+            el.SED_Codigo,
+            el.ALIM_Etiqueta,
+            u.USUA_Nombres 
+        from Deficiencias d
+        inner join Usuarios u on d.DEFI_UsuarioInic = u.USUA_Interno
+        inner join (
+            select t.*, s.SED_Codigo 
+            from (
+                select
+                    'POST' as TipoElemento,
+                    p.POST_Interno as IdElemento,
+                    p.POST_CodigoNodo as CodIns,
+                    p.POST_Etiqueta as CodElemento,
+                    p.POST_Subestacion as Subestacion,
+                    p.ALIM_Interno,
+                    a.ALIM_Codigo,
+                    a.ALIM_Etiqueta,
+                    p.POST_Latitud as Latitud,
+                    p.POST_Longitud as Longitud
+                from Postes p
+                inner join Alimentadores a on p.ALIM_Interno = a.ALIM_Interno
+                union all
+                select
+                    'VANO' as TipoElemento,
+                    v.VANO_Interno,
+                    v.VANO_Codigo as CodIns,
+                    v.VANO_Etiqueta as CodElemento,
+                    v.VANO_Subestacion as Subestacion,
+                    v.ALIM_Interno,
+                    a.ALIM_Codigo,
+                    a.ALIM_Etiqueta,
+                    v.VANO_LatitudIni as Latitud,
+                    v.VANO_LongitudFin as Longitud
+                from Vanos v
+                inner join Alimentadores a on v.ALIM_Interno = a.ALIM_Interno
+            ) as t
+            inner join Seds s on s.SED_Interno = t.Subestacion
+        ) el on d.DEFI_IdElemento = el.IdElemento and d.DEFI_TipoElemento = el.TipoElemento
+        left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
+        left join Codigos c on t.CODI_Interno = c.CODI_Interno
+        where Convert(date,DEFI_FecRegistro) = ?
+        order by DEFI_Interno desc
+        """
+        cursor.execute(query, fecha)
+        
+        columns = [column[0] for column in cursor.description]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        return jsonify({
+            "data": rows
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  
+
+    #finally:
+        #cursor.close()
+        #cnxn.close()  
+
 
 @app.route('/listardeficienciasxelemento', methods=['GET'])
 def listardeficienciasxelemento():
