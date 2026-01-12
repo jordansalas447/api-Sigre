@@ -1,7 +1,19 @@
 import pyodbc
 
-class Config:
-    cnxn = pyodbc.connect(
+# class Config:
+#     cnxn = pyodbc.connect(
+#      r"Driver={ODBC Driver 18 for SQL Server};"
+#      r"Server=serversigre.database.windows.net,1433;"
+#      r"Database=sigre;"
+#      r"UID=usersigre;"
+#      r"PWD=Sigrebt#2025;"
+#      r"Encrypt=yes;"
+#      r"TrustServerCertificate=no;"
+#      r"Connection Timeout=30"
+#      r"MARS_Connection=Yes;"
+# )
+    
+CONNECTION_STRING = (
      r"Driver={ODBC Driver 18 for SQL Server};"
      r"Server=serversigre.database.windows.net,1433;"
      r"Database=sigre;"
@@ -10,9 +22,12 @@ class Config:
      r"Encrypt=yes;"
      r"TrustServerCertificate=no;"
      r"Connection Timeout=30"
+     r"MARS_Connection=Yes;"
 )
-    
-    
+
+def get_connection():
+    return pyodbc.connect(CONNECTION_STRING)
+
 #     r"Driver={ODBC Driver 18 for SQL Server};"
 #     r"Server=serversigre.database.windows.net,1433;"
 #     r"Database=sigre;"

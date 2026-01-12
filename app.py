@@ -1,10 +1,10 @@
 from flask import Flask, send_file, request , jsonify
 from flask_cors import CORS
 from generarreporteSealV1 import GenerarReporte
-from config import Config
+from config import get_connection
 
-cnxn = Config.cnxn
-cursor = cnxn.cursor()
+#cnxn = Config.cnxn
+#cursor = cnxn.cursor()
 
 app = Flask(__name__)
 CORS(app)
@@ -12,32 +12,41 @@ CORS(app)
 @app.route('/ExportarReportePresentacionSeal', methods=['POST'])
 def ExportarReportePresentacionSeal():
 
+    #try:
 
-    CodSubestacion = request.form.get('CodSubestacion') 
-    cursor.execute("EXEC sp_ObtenerSEDInterno " + CodSubestacion)
-    
-    pathSave = request.form.get('pathSave')
-    path = request.form.get('path')
-    rows = cursor.fetchone()
-    
-    Path, Name_File = GenerarReporte(str(rows[0]), pathSave, path)
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
 
-    return send_file(Path, as_attachment=True, download_name=Name_File)
+        CodSubestacion = request.form.get('CodSubestacion') 
+        cursor.execute("EXEC sp_ObtenerSEDInterno " + CodSubestacion)
+
+        pathSave = request.form.get('pathSave')
+        path = request.form.get('path')
+        rows = cursor.fetchone()
+
+        Path, Name_File = GenerarReporte(str(rows[0]), pathSave, path)
+
+        return send_file(Path, as_attachment=True, download_name=Name_File)
+
+    #finally:
+        cursor.close()
+        #cnxn.close()
 
 
 @app.route("/alimentadoresetiqueta", methods=["GET"])
 def get_alimentadores_etiqueta():
     try:
-        
-        #cursor.open()
-        
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+    
         # Ejecutar tu procedimiento almacenado
         cursor.execute("EXEC sp_GetAlimentadoresEtiqueta")
 
         # Obtener columnas
         columns = [column[0] for column in cursor.description]
 
-        # Convertir resultados a diccionario
+     # Convertir resultados a diccionario
         results = []
         for row in cursor.fetchall():
             results.append(dict(zip(columns, row)))
@@ -50,16 +59,24 @@ def get_alimentadores_etiqueta():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
+    #finally:
+        #cursor.close()
+        #cnxn.close()
+        
+    
     
 @app.route("/GetSubestacionbyAlimCode", methods=["POST"])
 def get_subestacion_by_alim_code():
     try:
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
         data = request.get_json()
         Alimentador = data.get("Alimentador")
         #cursor.open()
         
         # Ejecutar tu procedimiento almacenado
-        cursor.execute("EXEC sp_GetSEDCodeByAlim " + Alimentador)
+        cursor.execute("EXEC sp_GetSEDCodeByAlim ?", Alimentador)
 
         # Obtener columnas
         columns = [column[0] for column in cursor.description]
@@ -77,16 +94,24 @@ def get_subestacion_by_alim_code():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
+    #finally:
+        #cursor.close()
+        #cnxn.close()
+    
 
 @app.route("/getsedcodigo", methods=["POST"])
 def get_sed_code():
     try:
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
         data = request.get_json()
         SEDCodigo = data.get("SEDCodigo")
         #cursor.open()
         
         # Ejecutar tu procedimiento almacenado
-        cursor.execute("EXEC sp_ObtenerSEDInterno " + SEDCodigo)
+        cursor.execute("EXEC sp_ObtenerSEDInterno ?", SEDCodigo)
 
         # Obtener columnas
         columns = [column[0] for column in cursor.description]
@@ -108,12 +133,16 @@ def get_sed_code():
 @app.route("/ElementosFaltantes", methods=["POST"])
 def Elementos_Faltantes():
     try:
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
         data = request.get_json()
         SEDCodigo = data.get("SEDCodigo")
         #cursor.open()
         
         # Ejecutar tu procedimiento almacenado
-        cursor.execute("EXEC sp_ListarPostesYVanosPorSed " + SEDCodigo)
+        cursor.execute("EXEC sp_ListarPostesYVanosPorSed ?", SEDCodigo)
 
         # Obtener columnas
         columns = [column[0] for column in cursor.description]
@@ -123,6 +152,9 @@ def Elementos_Faltantes():
         for row in cursor.fetchall():
             results.append(dict(zip(columns, row)))
 
+        while cursor.nextset():
+            pass
+
         #cursor.close()
         #cnxn.close()
 
@@ -131,10 +163,18 @@ def Elementos_Faltantes():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
+    #finally:
+        #cursor.close()
+        #cnxn.close()
+    
     
 @app.route('/buscarelemento', methods=['GET'])
 def buscarelemento():
     try:
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
         codIns = request.args.get('codins')
         Elemento = request.args.get('elemento')
 
@@ -152,12 +192,20 @@ def buscarelemento():
         })
         
     except Exception as e:
-        return jsonify({"error": str(e)}), 500    
+        return jsonify({"error": str(e)}), 500  
+
+    #finally:
+        #cursor.close()
+        #cnxn.close()  
     
 
 @app.route('/listardeficienciasxelemento', methods=['GET'])
 def listardeficienciasxelemento():
     try:
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
         idelemento = request.args.get('idelemento')
         tipoelemento = request.args.get('tipoelemento')
 
@@ -175,13 +223,21 @@ def listardeficienciasxelemento():
         })
         
     except Exception as e:
-        return jsonify({"error": str(e)}), 500    
+        return jsonify({"error": str(e)}), 500 
+
+    #finally:
+        #cursor.close()
+        #cnxn.close()   
 
 
 
 @app.route('/GetLatLongPost', methods=['GET'])
 def GetLatLongPost():
     try:
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
         sed_codigo = request.args.get('sedCodigo')
 
         if not sed_codigo:
@@ -199,10 +255,18 @@ def GetLatLongPost():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+    #finally:
+        cursor.close()
+        #cnxn.close()
 
 @app.route('/GetLatLongVanos', methods=['GET'])
 def GetLatLongVanos():
     try:
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
         sed_codigo = request.args.get('sedCodigo')
 
         if not sed_codigo:
@@ -219,12 +283,20 @@ def GetLatLongVanos():
         })
         
     except Exception as e:
-        return jsonify({"error": str(e)}), 500  
+        return jsonify({"error": str(e)}), 500 
+
+    #finally:
+        #cursor.close()
+        #cnxn.close() 
 
 
 @app.route('/reporteinspectores', methods=['POST','GET'])
 def reporteinspectores():  
     try:
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
         data = request.get_json()
         fecha = data.get("fecha")
 
@@ -243,9 +315,17 @@ def reporteinspectores():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+    #finally:
+        #cursor.close()
+        #cnxn.close()
     
 @app.route("/insertposte", methods=["POST"])
 def insertar_poste():
+
+    cnxn = get_connection()
+    cursor = cnxn.cursor()
+
     data = request.get_json()
     cursor = cnxn.cursor()
 
@@ -294,6 +374,10 @@ def insertar_poste():
             "ok": False,
             "error": str(e)
         }), 500
+    
+    #finally:
+        #cursor.close()
+        #cnxn.close()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')

@@ -11,15 +11,18 @@ from openpyxl.utils.cell import get_column_letter
 from openpyxl.styles import Font
 import asyncio
 from flask import jsonify
-from config import Config
+from config import get_connection
 from utils import copiar_formato, Unirceldas, ConvertirNoneto0 , copiar
 
-cnxn = Config.cnxn
-cursor = cnxn.cursor()
+#cnxn = Config.cnxn
+#cursor = cnxn.cursor()
 
 def GenerarReporte(CodAlim,PathSave,BASEPATH):
+
+    cnxn = get_connection()
+    cursor = cnxn.cursor()
     
-    ruta_del_archivo_existente = 'D:/SigreWeb/SigreApiRest/Reporte/ReportesSigre.xlsx'
+    ruta_del_archivo_existente = 'D:/SigreWeb/ProjectoSigre/SigreApiRest/Reporte/ReportesSigre.xlsx'
     #POSTES
     #cursor.execute("BEGIN TRANSACTION")  
     #cursor.execute("sp_UpdateCorregirRutas " + CodAlim)
