@@ -134,6 +134,57 @@ def get_sed_code():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
+
+@app.route("/getelementosporsubestacion", methods=["GET"])
+def get_elementos_por_subestacion():
+    try:
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
+        SEDCodigo = request.args.get('SEDCodigo')
+
+        # Ejecutar procedimiento almacenado
+        cursor.execute("EXEC sp_elementosporsubestacion ?", SEDCodigo)
+
+        # Obtener columnas
+        columns = [column[0] for column in cursor.description]
+
+        # Convertir resultados a diccionario
+        results = []
+        for row in cursor.fetchall():
+            results.append(dict(zip(columns, row)))
+
+        return jsonify(results)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/getarchivosdeficienciaporelemento", methods=["GET"])
+def get_archivos_deficiencia_por_elemento():
+    try:
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
+        SEDCodigo = request.args.get('SEDCodigo')
+        Codigo = request.args.get('Codigo')
+
+        # Ejecutar procedimiento almacenado
+        cursor.execute("EXEC sp_archivosdeficienciaporelemento ?,?", SEDCodigo,Codigo)
+
+        # Obtener columnas
+        columns = [column[0] for column in cursor.description]
+
+        # Convertir resultados a diccionario
+        results = []
+        for row in cursor.fetchall():
+            results.append(dict(zip(columns, row)))
+
+        return jsonify(results)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
     
 @app.route("/ElementosFaltantes", methods=["POST"])
 def Elementos_Faltantes():

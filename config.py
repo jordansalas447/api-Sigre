@@ -28,7 +28,7 @@ CONNECTION_STRING = (
 CONNECTION_STRING2 = (
    r"Driver={ODBC Driver 18 for SQL Server};"
    r"Server=.\SQLEXPRESS;"
-   r"Database=sigre;"
+   r"Database=Sigre3;"
    r"Trusted_Connection=yes;"
    r"TrustServerCertificate=yes;"
 )
@@ -45,7 +45,7 @@ CONNECTION_STRING3 = (
 )
 
 def get_connection():
-    return pyodbc.connect(CONNECTION_STRING)
+    return pyodbc.connect(CONNECTION_STRING2)
 
 #     r"Driver={ODBC Driver 18 for SQL Server};"
 #     r"Server=serversigre.database.windows.net,1433;"
