@@ -344,6 +344,93 @@ def historialinspecciones():
         #cnxn.close()  
 
 
+@app.route('/reporteinspectoresxfecha', methods=['GET'])
+def reporteinspectoresxfecha():
+    try:
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
+        fecha = request.args.get('fecha')
+
+        if not fecha:
+            return jsonify({"error": "fecha es requerido"}), 400
+
+        # ----------- CONSULTA 1 -------------------
+        query = """
+    SELECT 
+        COUNT(t.Codigo) AS Total,
+        t.TipoElemento,
+        t.USUA_Nombres
+    FROM (
+        SELECT DISTINCT
+            el.Codigo,
+            el.TipoElemento,
+            u.USUA_Nombres
+        FROM (   
+            -- POSTES
+            SELECT  
+                p.POST_Interno        AS Interno,
+                p.POST_CodigoNodo     AS Codigo,
+                p.POST_Etiqueta       AS Etiqueta,
+                p.ALIM_Interno        AS Alimentador,
+                p.POST_Subestacion    AS Subestacion,
+                'POST'                AS TipoElemento
+            FROM Postes p 
+            WHERE p.POST_EsBT = 1
+
+            UNION ALL
+
+            -- VANOS
+            SELECT  
+                v.VANO_Interno        AS Interno,
+                v.VANO_Codigo         AS Codigo,
+                v.VANO_Etiqueta       AS Etiqueta,
+                v.ALIM_Interno        AS Alimentador,
+                v.VANO_Subestacion    AS Subestacion,
+                'VANO'                AS TipoElemento
+            FROM Vanos v 
+            WHERE v.VANO_EsBT = 1
+        ) AS el
+        INNER JOIN Seds s 
+            ON el.Subestacion = s.SED_Interno
+        INNER JOIN Deficiencias d 
+            ON d.DEFI_IdElemento = el.Interno 
+           AND d.DEFI_TipoElemento = el.TipoElemento
+        LEFT JOIN Tipificaciones t 
+            ON t.TIPI_Interno = d.TIPI_Interno
+        LEFT JOIN Codigos c 
+            ON c.CODI_Interno = t.CODI_Interno
+        LEFT JOIN Alimentadores a 
+            ON a.ALIM_Interno = el.Alimentador
+        LEFT JOIN Usuarios u 
+            ON u.USUA_Interno = d.DEFI_UsuarioInic
+        WHERE CONVERT(DATE, d.DEFI_FechaCreacion) = ?
+    ) AS t
+    GROUP BY 
+        t.USUA_Nombres,
+        t.TipoElemento
+    ORDER BY 
+        t.USUA_Nombres;
+        """
+        cursor.execute(query, fecha)
+        
+        columns = [column[0] for column in cursor.description]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        return jsonify({
+            "data": rows
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  
+
+    #finally:
+        #cursor.close()
+        #cnxn.close()  
+
+
+
 @app.route('/listardeficienciasxelemento', methods=['GET'])
 def listardeficienciasxelemento():
     try:
