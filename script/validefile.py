@@ -22,7 +22,15 @@ select distinct
 --el.Codigo,
 --u.USUA_Nombres,
 --replace(replace(replace(ar.ARCH_Nombre,'SIGRE.MOVIL/',''),'Poste','POST'),'Vano','VANO') as Archivo,
-concat(a.ALIM_Etiqueta,'/',s.SED_Codigo,'/',el.TipoElemento,'/',el.Codigo,'/') as Elemento
+concat(
+a.ALIM_Etiqueta,
+'/',
+s.SED_Codigo,
+'/',
+iif(el.TipoElemento = 'POST','Poste','Vano'),
+'/',
+el.Codigo,
+'/') as Elemento
 from (   
    -- POSTES
     SELECT  
@@ -41,8 +49,8 @@ from (
         v.VANO_Codigo         AS Codigo,
         v.VANO_Etiqueta AS Etiqueta,
         v.ALIM_Interno AS Alimentador,
-        v.VANO_Terceros as Terceros,
         v.VANO_Subestacion AS Subestacion,
+        v.VANO_Terceros as Terceros,
         'VANO' as TipoElemento
     FROM  Vanos v where v.VANO_EsBT = 1 ) as el
     inner join Seds s on el.Subestacion = s.SED_Interno
@@ -55,7 +63,7 @@ from (
     where el.Terceros = 0 and s.SED_Codigo = ? ) as t order by t.Elemento 
         """
 
-cursor.execute(query,'2095')
+cursor.execute(query,'1459')
 rutas = ['D:\\compartir\\Fotos-Reportes\\' + fila[0] for fila in cursor.fetchall()]
 
 cnxn.close()
@@ -63,5 +71,6 @@ cnxn.close()
 for ruta in rutas:
     if not Path(ruta).exists():
         print(f"❌ No existe: {ruta}")
+
 
 print("Evaluación completada.")
