@@ -2,6 +2,7 @@ from flask import Flask, send_file, request , jsonify
 from flask_cors import CORS
 from generarreporteSealV1 import GenerarReporte
 from config import get_connection
+from globals import queryElemetosxSed , queryElemetosNoInspeccionados ,queryEstadodeElementos
 
 #cnxn = Config.cnxn
 #cursor = cnxn.cursor()
@@ -23,7 +24,7 @@ def ExportarReportePresentacionSeal():
         cursor = cnxn.cursor()
 
         CodSubestacion = request.form.get('CodSubestacion') 
-        cursor.execute("EXEC sp_ObtenerSEDInterno " + CodSubestacion)
+        cursor.execute("EXEC sp_ObtenerSEDInterno ?" , CodSubestacion)
 
         pathSave = request.form.get('pathSave')
         path = request.form.get('path')
@@ -328,6 +329,100 @@ def historialinspecciones():
         order by DEFI_Interno desc
         """
         cursor.execute(query, fecha)
+        
+        columns = [column[0] for column in cursor.description]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        return jsonify({
+            "data": rows
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  
+
+    #finally:
+        #cursor.close()
+        #cnxn.close()  
+
+
+@app.route('/ElemetosxSed', methods=['GET'])
+def ElemetosxSed():
+    try:
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
+        SEDCodigo = request.args.get('SEDCodigo')
+
+        if not SEDCodigo:
+            return jsonify({"error": "SEDCodigo es requerido"}), 400
+
+        # ----------- CONSULTA 1 -------------------
+        query = queryElemetosxSed
+        
+        cursor.execute(query, SEDCodigo)
+        
+        columns = [column[0] for column in cursor.description]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        return jsonify({
+            "data": rows
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  
+
+    #finally:
+        #cursor.close()
+        #cnxn.close()
+
+@app.route('/EstadodeElementos', methods=['GET'])
+def EstadodeElementos():
+    try:
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
+        SEDCodigo = request.args.get('SEDCodigo')
+
+        if not SEDCodigo:
+            return jsonify({"error": "SEDCodigo es requerido"}), 400
+
+        # ----------- CONSULTA 1 -------------------
+        query = queryEstadodeElementos
+        
+        cursor.execute(query, SEDCodigo)
+        
+        columns = [column[0] for column in cursor.description]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        return jsonify({
+            "data": rows
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  
+
+    #finally:
+        #cursor.close()
+        #cnxn.close()
+
+@app.route('/ElemetosNoInspeccionados', methods=['GET'])
+def ElemetosNoInspeccionados():
+    try:
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
+        SEDCodigo = request.args.get('SEDCodigo')
+
+        if not SEDCodigo:
+            return jsonify({"error": "SEDCodigo es requerido"}), 400
+
+        # ----------- CONSULTA 1 -------------------
+        query = queryElemetosNoInspeccionados
+        
+        cursor.execute(query, SEDCodigo)
         
         columns = [column[0] for column in cursor.description]
         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]

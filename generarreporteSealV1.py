@@ -8,7 +8,7 @@ from io import BytesIO
 from dateutil import parser
 from openpyxl import load_workbook
 from openpyxl.utils.cell import get_column_letter
-from openpyxl.styles import Font
+from openpyxl.styles import Font, PatternFill
 import asyncio
 from flask import jsonify
 from config import get_connection
@@ -62,9 +62,9 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
         "Espacio06":"",
         "Espacio07":"",
         "Espacio08":"",
-        "S0": [],
-        "S1": [],
-        "S2": [],
+        #"S0": [],
+        #"S1": [],
+        #"S2": [],
         "N": [],
         "Total": [],
     }
@@ -88,9 +88,9 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
         #data_lists["TIPI1086"].append(str(rows[16]).replace('None',''))
         data_lists["Criticidad"].append(str(rows[14]).replace('None',''))
         data_lists["Ruta"].append('=HYPERLINK("'+BASEPATH+  str(rows[15]).replace('None','') + '","Ver Fotos")')
-        data_lists["S0"].append(int(ConvertirNoneto0(rows[16])))
-        data_lists["S1"].append(int(ConvertirNoneto0(rows[17])))
-        data_lists["S2"].append(int(ConvertirNoneto0(rows[18])))
+        #data_lists["S0"].append(int(ConvertirNoneto0(rows[16])))
+        #data_lists["S1"].append(int(ConvertirNoneto0(rows[17])))
+        #data_lists["S2"].append(int(ConvertirNoneto0(rows[18])))
         data_lists["N"].append(int(ConvertirNoneto0(rows[19])))
         data_lists["Total"].append(ConvertirNoneto0(rows[16]) + ConvertirNoneto0(rows[17]) + ConvertirNoneto0(rows[18]) + ConvertirNoneto0(rows[19]))
         Alimentador.append(str(rows[0]))
@@ -129,7 +129,17 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
             if value == 'Sí':
                 celda.font = Font(bold=True,size=14,name='Arial')
 
-
+    celda = hoja.cell(row=r_idx-13, column=c_idx+13, value=len(results[2]))
+    celda.fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")  # Fondo amarillo
+    celda.font = Font(bold=True, color="000000", size=16)  # Letra negra, en negrita, tamaño grande
+    from openpyxl.styles import Border, Side  # Asegúrate de haber importado Border y Side antes
+    thick_black = Border(
+        left=Side(border_style='medium', color='000000'),
+        right=Side(border_style='medium', color='000000'),
+        top=Side(border_style='medium', color='000000'),
+        bottom=Side(border_style='medium', color='000000')
+    )
+    celda.border = thick_black
     # Definir el rango que quieres copiar
 
     copiar(hoja,rango_origen_CuadroSumTotal,0,len(results[2]) + 13)
@@ -138,19 +148,18 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
     records = cursor.fetchall()
     results2 = []
 
-
-    TotalS0=0
-    TotalS1=0
-    TotalS2=0
+    #TotalS0=0
+    #TotalS1=0
+    #TotalS2=0
     TotalN=0
     TotalSuma=0
 
     for rows in records:
         data = {
         'Codigo':rows[0],
-        'S0':rows[1],
-        'S1':rows[2],
-        'S2':rows[3],
+        #'S0':rows[1],
+        #'S1':rows[2],
+        #'S2':rows[3],
         'N':rows[4],
         'Total':int(rows[1])+int(rows[2])+int(rows[3])+int(rows[4]),
         'Suma':int(rows[1])+int(rows[4])
@@ -158,17 +167,17 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
         results2.append(data)
 
     for list in results2:
-        TotalS0 += list['S0']
-        TotalS1 += list['S1']
-        TotalS2 += list['S2']
+        #TotalS0 += list['S0']
+        #TotalS1 += list['S1']
+        #TotalS2 += list['S2']
         TotalN += list['N']
         TotalSuma += list['Suma']
 
     data = {
         'Codigo':'Total',
-        'S0':TotalS0,
-        'S1':TotalS1,
-        'S2':TotalS2,
+        #'S0':TotalS0,
+        #'S1':TotalS1,
+        #'S2':TotalS2,
         'N':TotalN,
         'Total':'',
         'Suma':TotalSuma
@@ -183,11 +192,12 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
         for col_idx, col_name in enumerate(df2.columns, 1):
             cell = hoja.cell(row=row_idx + 13, column=col_idx +len(results[2]) + 14).value = row_data[col_name]
 
+
     Unirceldas(hoja,len(results[2])+14,8,len(results[2])+14,12)
-    Unirceldas(hoja,len(results[2])+15,8,len(results[2])+17,11)
-    Unirceldas(hoja,len(results[2])+18,8,len(results[2])+18,11)
-    Unirceldas(hoja,len(results[2])+19,8,len(results[2])+19,12)
-    Unirceldas(hoja,len(results[2])+20,8,len(results[2])+20,12)
+    #Unirceldas(hoja,len(results[2])+15,8,len(results[2])+17,11)
+    Unirceldas(hoja,len(results[2])+15,8,len(results[2])+15,11)
+    Unirceldas(hoja,len(results[2])+16,8,len(results[2])+16,12)
+    Unirceldas(hoja,len(results[2])+17,8,len(results[2])+17,12)
 
 
     # VANOS ---------------------------------------------------------------------------------------------------------------------------------------------------
@@ -212,9 +222,9 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
     Ruta = []
     
 
-    S0 = []
-    S1 = []
-    S2 = []
+    #S0 = []
+    #S1 = []
+    #S2 = []
     N = []
 
     Alimentador = []
@@ -234,9 +244,9 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
             Criticidad.append(str(rows[9]).replace('None',''))
             Ruta.append('=HYPERLINK("'+BASEPATH+  str(rows[10]).replace('None','') + '","Ver Fotos")')
 
-            S0.append(int(ConvertirNoneto0(rows[11])))
-            S1.append(int(ConvertirNoneto0(rows[12])))
-            S2.append(int(ConvertirNoneto0(rows[13])))
+            #S0.append(int(ConvertirNoneto0(rows[11])))
+            #S1.append(int(ConvertirNoneto0(rows[12])))
+            #S2.append(int(ConvertirNoneto0(rows[13])))
             N.append(int(ConvertirNoneto0(rows[14])))
 
             Total.append(ConvertirNoneto0(rows[11]) + ConvertirNoneto0(rows[12])+ ConvertirNoneto0(rows[13])+ ConvertirNoneto0(rows[14]))          
@@ -260,9 +270,9 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
     results.append([''])
     results.append([''])
     results.append([''])
-    results.append(S0)
-    results.append(S1)
-    results.append(S2)
+    #results.append(S0)
+    #results.append(S1)
+    #results.append(S2)
     results.append(N)
     results.append(Total)
 
@@ -294,6 +304,19 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
             if value == 'Sí':
                 celda.font = Font(bold=True,size=14,name='Arial')
 
+    celda = hoja.cell(row=r_idx-5, column=c_idx+13, value=len(results[2]))
+    celda.fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")  # Fondo amarillo
+    celda.font = Font(bold=True, color="000000", size=16)  # Letra negra, en negrita, tamaño grande
+    from openpyxl.styles import Border, Side  # Asegúrate de haber importado Border y Side antes
+    thick_black = Border(
+        left=Side(border_style='medium', color='000000'),
+        right=Side(border_style='medium', color='000000'),
+        top=Side(border_style='medium', color='000000'),
+        bottom=Side(border_style='medium', color='000000')
+    )
+    celda.border = thick_black
+
+
 
     # Definir el rango que quieres copiar
 
@@ -313,9 +336,9 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
     for rows in records:
         data = {
         'Codigo':rows[0],
-        'S0':rows[1],
-        'S1':rows[2],
-        'S2':rows[3],
+        #'S0':rows[1],
+        #'S1':rows[2],
+        #'S2':rows[3],
         'N':rows[4],
         'Total':int(rows[1])+int(rows[2])+int(rows[3])+int(rows[4]),
         'Suma':int(rows[1])+int(rows[4])
@@ -323,17 +346,17 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
         results3.append(data)
 
     for list in results3:
-        TotalS0 += list['S0']
-        TotalS1 += list['S1']
-        TotalS2 += list['S2']
+        #TotalS0 += list['S0']
+        #TotalS1 += list['S1']
+        #TotalS2 += list['S2']
         TotalN += list['N']
         TotalSuma += list['Suma']
 
     data = {
         'Codigo':'Total',
-        'S0':TotalS0,
-        'S1':TotalS1,
-        'S2':TotalS2,
+        #'S0':TotalS0,
+        #'S1':TotalS1,
+        #'S2':TotalS2,
         'N':TotalN,
         'Total':'',
         'Suma':TotalSuma
@@ -350,10 +373,10 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
             cell.value = row_data[col_name]
 
     Unirceldas(hoja,len(results[2])+14,6,len(results[2])+14,11)
-    Unirceldas(hoja,len(results[2])+15,6,len(results[2])+17,10)
-    Unirceldas(hoja,len(results[2])+18,6,len(results[2])+18,10)
-    Unirceldas(hoja,len(results[2])+19,6,len(results[2])+19,11)
-    Unirceldas(hoja,len(results[2])+20,6,len(results[2])+20,11)
+    #Unirceldas(hoja,len(results[2])+15,6,len(results[2])+17,10)
+    Unirceldas(hoja,len(results[2])+15,6,len(results[2])+15,10)
+    Unirceldas(hoja,len(results[2])+16,6,len(results[2])+16,11)
+    Unirceldas(hoja,len(results[2])+17,6,len(results[2])+17,11)
 
     #cursor.execute("rollback TRANSACTION")
     File = Alimentador[0]+' '+datetime.now().strftime("%d%m%Y%H%M")+'.xlsx'
