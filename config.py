@@ -45,7 +45,7 @@ CONNECTION_STRING3 = (
 )
 
 def get_connection():
-    return pyodbc.connect(CONNECTION_STRING2)
+    return pyodbc.connect(CONNECTION_STRING)
 
 #     r"Driver={ODBC Driver 18 for SQL Server};"
 #     r"Server=serversigre.database.windows.net,1433;"
