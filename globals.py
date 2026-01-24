@@ -204,23 +204,25 @@ inner join
 
 
 queryReporteRevision = """
-select 
+select distinct
 el.Codigo,
 el.Etiqueta,
 el.TipoElemento,
-t.Criticidad,
-t.Tipificacion,
-t.ALIM_Etiqueta ,
+iif( t.Criticidad is null ,convert(nvarchar,el.DEFI_EstadoCriticidad),t.Criticidad) as Criticidad,
+iif(t.Tipificacion is null,convert(nvarchar,el.TIPI_Interno),t.Tipificacion) as Tipificacion,
+iif(t.ALIM_Etiqueta is null,el.DEFI_CodAMT,t.ALIM_Etiqueta) as Alimentador,
 t.SED_Codigo,
-t.NumSuministro ,
+iif(t.NumSuministro is null,el.DEFI_NumSuministro,t.NumSuministro) as NumSuministro ,
 t.DEFI_DistHorizontal,
 t.DEFI_DistVertical,
-t.DEFI_FecRegistro,
-t.Observacion,
-t.Comentario,
-t.USUA_Nombres,
-t.Corregido
+iif(t.DEFI_FecRegistro is null,el.DEFI_FecRegistro,t.DEFI_FecRegistro) as FechaRegistro,
+iif(t.Observacion is null,el.DEFI_Observacion,t.Observacion) as Observacion,
+iif(t.Comentario is null,el.DEFI_Comentario,t.Comentario) as Comentario,
+iif(t.USUA_Nombres is null, el.USUA_Nombres,t.USUA_Nombres) as Inspector,
+t.Corregido,
+concat('=HYPERLINK("',t.Corregido,'";"','Ver Fotos','")' ) as Enlaces
 from (
+select * from
  (   
    -- POSTES
     SELECT  
@@ -240,7 +242,10 @@ from (
         v.ALIM_Interno AS Alimentador,
         v.VANO_Subestacion AS Subestacion,
         'VANO' as TipoElemento
-    FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0 ) 
+    FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0 
+  ) as el 
+  left join (select * from Deficiencias d where d.DEFI_Activo = 1) as d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
+  left join Usuarios u on u.USUA_Interno = d.DEFI_UsuarioInic
 ) 
 as el left  join
 (
@@ -330,7 +335,7 @@ from (
     left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
     left join Codigos c on c.CODI_Interno = t.CODI_Interno
     left join Alimentadores a on a.ALIM_Interno = el.Alimentador
-    left join Usuarios u on u.USUA_Interno = d.DEFI_UsuarioMod
+    left join Usuarios u on u.USUA_Interno = d.DEFI_UsuarioInic
     left join Archivos ar on ar.ARCH_CodTabla = d.DEFI_Interno
     left join
     (

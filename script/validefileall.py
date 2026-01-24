@@ -18,7 +18,11 @@ cursor = cnxn.cursor()
 
 query = """
 SELECT
-    replace(t.Ruta,'/7004/',concat('/',seg.value,'/')) as Corregido,
+CASE 
+    WHEN seg.value = '7004' THEN replace(t.Ruta,'/7004/',concat('/',seg.value,'/',convert(nvarchar,t.Contador),'/'))
+    ELSE replace(t.Ruta,'/7004/',concat('/',seg.value,'/'))
+END as Corregido,
+   -- replace(t.Ruta,'/7004/',concat('/',seg.value,'/')) as Corregido,
     seg.value AS segmento_6,
     t.ARCH_Nombre
 FROM (
@@ -36,12 +40,13 @@ END,
 '/',
 el.Codigo,
 '/',
-iif(c.CODI_Codigo is null,'SINDEFF',c.CODI_Codigo),
+iif(c.CODI_Codigo is null,'SINDEF',c.CODI_Codigo),
 '/',
 --t1.Contador,
 --iif(t1.Contador is null,'', '/'),
 RIGHT(ar.ARCH_Nombre, CHARINDEX('/', REVERSE(ar.ARCH_Nombre)) - 1)
 ) as Ruta,
+t1.Contador,
 RIGHT(ar.ARCH_Nombre, CHARINDEX('/', REVERSE(ar.ARCH_Nombre)) - 1) AS NombreArchivo,
 ar.ARCH_Nombre
 from (   
@@ -65,7 +70,7 @@ from (
         'VANO' as TipoElemento
     FROM  Vanos v where v.VANO_EsBT = 1 ) as el
     inner join Seds s on el.Subestacion = s.SED_Interno
-    left join Deficiencias d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
+    left join (select * from Deficiencias d where DEFI_Activo = 1) d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
     left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
     left join Codigos c on c.CODI_Interno = t.CODI_Interno
     left join Alimentadores a on a.ALIM_Interno = el.Alimentador
@@ -99,7 +104,7 @@ from (
         'VANO' as TipoElemento
     FROM  Vanos v where v.VANO_EsBT = 1
     ) as el 
-    inner join  Deficiencias d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
+    inner join (select * from Deficiencias where DEFI_Activo = 1) d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
     inner join Seds s on s.SED_Interno = el.Subestacion
     left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
     left join Codigos c on c.CODI_Interno = t.CODI_Interno
@@ -121,7 +126,7 @@ CROSS APPLY (
 WHERE t.NombreArchivo NOT LIKE '%.m4a';
         """
 
-cursor.execute(query,'2095','2095')
+cursor.execute(query,'1535','1535')
 rutas = ['D:\\compartir\\Fotos-Reportes\\' + fila[0] for fila in cursor.fetchall()]
 
 cnxn.close()
