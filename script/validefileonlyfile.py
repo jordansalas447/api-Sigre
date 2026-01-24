@@ -17,14 +17,16 @@ cnxn = pyodbc.connect(CONNECTION_STRING3)
 cursor = cnxn.cursor()
 
 query = """
-SELECT
+SELECT distinct
 --CASE 
  --   WHEN seg.value = '7004' THEN replace(t.Ruta,'/7004/',concat('/',seg.value,'/',convert(nvarchar,t.Contador),'/'))
  --   ELSE replace(t.Ruta,'/7004/',concat('/',seg.value,'/'))
 --END as Corregido,
    -- replace(t.Ruta,'/7004/',concat('/',seg.value,'/')) as Corregido,
    -- seg.value AS segmento_6,
-    t.ARCH_Nombre
+   -- t.ARCH_Nombre,
+   -- RIGHT(t.ARCH_Nombre, CHARINDEX('/', REVERSE(t.ARCH_Nombre)) - 1),
+    REPLACE(t.ARCH_Nombre,RIGHT(t.ARCH_Nombre, CHARINDEX('/', REVERSE(t.ARCH_Nombre)) - 1),'') as SiNombre
 FROM (
 select * from (
 select distinct
@@ -126,7 +128,7 @@ CROSS APPLY (
 WHERE t.NombreArchivo NOT LIKE '%.m4a';
         """
 
-cursor.execute(query,'8221','8221')
+cursor.execute(query,'8618','8618')
 rutas = ['D:\\compartir\\Fotos-Reportes\\' + fila[0] for fila in cursor.fetchall()]
 
 cnxn.close()
