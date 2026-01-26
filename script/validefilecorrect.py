@@ -19,15 +19,18 @@ cursor = cnxn.cursor()
 query = """
 SELECT distinct
 CASE 
-  --  WHEN t.CODI_Codigo = '7004' THEN replace(t.Ruta,'/7004/',concat('/7004/',convert(nvarchar,t.Contador),'/'))
-    WHEN seg.value = '7004' THEN replace(t.Ruta,'/7004/',concat('/',seg.value,'/',convert(nvarchar,t.Contador),'/'))
-    ELSE replace(t.Ruta,'/7004/',concat('/',seg.value,'/'))
+    WHEN t.CODI_Codigo = '7004' THEN replace(t.Ruta,'/7004/',concat('/7004/',convert(nvarchar,t.Contador),'/'))
+    --ELSE replace(t.Ruta,'/7004/',concat('/',seg.value,'/'))
+    ELSE t.Ruta 
 END as Corregido,
-   -- replace(t.Ruta,'/7004/',concat('/',seg.value,'/')) as Corregido,
+--t.Ruta,
+--t.CODI_Codigo,
+--t.Contador,
+ --   replace(t.Ruta,'/7004/',concat('/',seg.value,'/')) as Corregido2,
    -- seg.value AS segmento_6,
-   -- t.ARCH_Nombre,
-   -- RIGHT(t.ARCH_Nombre, CHARINDEX('/', REVERSE(t.ARCH_Nombre)) - 1),
-    REPLACE(t.ARCH_Nombre,RIGHT(t.ARCH_Nombre, CHARINDEX('/', REVERSE(t.ARCH_Nombre)) - 1),'') as SiNombreMal
+    t.ARCH_Nombre--,
+   -- RIGHT(t.ARCH_Nombre, CHARINDEX('/', REVERSE(t.ARCH_Nombre)) - 1)--,
+   -- REPLACE(t.ARCH_Nombre,RIGHT(t.ARCH_Nombre, CHARINDEX('/', REVERSE(t.ARCH_Nombre)) - 1),'') as SiNombre
 FROM (
 select * from (
 select distinct
@@ -44,15 +47,15 @@ END,
 el.Codigo,
 '/',
 iif(c.CODI_Codigo is null,'SINDEF',c.CODI_Codigo),
-'/'--,
+'/',
 --t1.Contador,
 --iif(t1.Contador is null,'', '/'),
---RIGHT(ar.ARCH_Nombre, CHARINDEX('/', REVERSE(ar.ARCH_Nombre)) - 1)
+RIGHT(ar.ARCH_Nombre, CHARINDEX('/', REVERSE(ar.ARCH_Nombre)) - 1)
 ) as Ruta,
 t1.Contador,
-c.CODI_Codigo,
 RIGHT(ar.ARCH_Nombre, CHARINDEX('/', REVERSE(ar.ARCH_Nombre)) - 1) AS NombreArchivo,
-ar.ARCH_Nombre
+ar.ARCH_Nombre,
+c.CODI_Codigo
 from (   
    -- POSTES
     SELECT  
@@ -130,8 +133,10 @@ CROSS APPLY (
 WHERE t.NombreArchivo NOT LIKE '%.m4a';
         """
 
-cursor.execute(query,'1887','1887')
-rutas = ['D:\\compartir\\Fotos-Reportes\\' + fila[0] for fila in cursor.fetchall()]
+BASE_ruta = r'\\192.168.1.49\h\Revision\Fotos-Reportes/'
+
+cursor.execute(query,'8402','8402')
+rutas = [BASE_ruta + fila[0] for fila in cursor.fetchall()]
 
 cnxn.close()
 

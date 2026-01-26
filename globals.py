@@ -390,3 +390,250 @@ inner join Seds s on s.SED_Interno = el.Subestacion
 where s.SED_Codigo = ?
 order by t.Corregido desc
 """
+
+
+ConsInsTotalDesglosado = """
+select * from (
+select 
+el.Codigo,
+iif(c.CODI_Codigo is null,'SIN DEF',c.CODI_Codigo) as Deficiencia,
+el.TipoElemento
+from (select * from Deficiencias where DEFI_Activo = 1) d 
+inner join (
+   -- POSTES
+    SELECT  
+        p.POST_Interno        AS Interno,
+        p.POST_CodigoNodo     AS Codigo,
+        p.POST_Etiqueta AS Etiqueta,
+        p.ALIM_Interno AS Alimentador,
+        p.POST_Subestacion AS Subestacion,
+        'POST' as TipoElemento
+    FROM  Postes p where POST_EsBT = 1 and p.POST_Terceros = 0
+    UNION ALL
+    -- VANOS
+    SELECT  
+        v.VANO_Interno        AS Interno,
+        v.VANO_Codigo         AS Codigo,
+        v.VANO_Etiqueta AS Etiqueta,
+        v.ALIM_Interno AS Alimentador,
+        v.VANO_Subestacion AS Subestacion,
+        'VANO' as TipoElemento
+    FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0
+) as el on el.TipoElemento = d.DEFI_TipoElemento and el.Interno = d.DEFI_IdElemento
+inner join Seds s on s.SED_Interno = el.Subestacion
+left join Tipificaciones t on d.TIPI_Interno = t.TIPI_Interno
+left join Codigos c on t.CODI_Interno = c.CODI_Interno
+where s.SED_Codigo = ? and el.TipoElemento = ?
+) as t
+order by t.TipoElemento,t.Deficiencia
+"""
+
+TotalDeficienciasxElemento = """
+select t.Total,t.Deficiencia,t.TipoElemento from (
+select 
+iif(t.Deficiencia = 'SIN DEF',3,1) as Orden,
+count(t.Deficiencia) as Total,
+t.Deficiencia,
+t.TipoElemento, 
+iif(t.Deficiencia = 'SIN DEF','SIN DEF','CON DEF') as Estado
+from (
+select
+el.Codigo,
+iif(c.CODI_Codigo is null,'SIN DEF',c.CODI_Codigo) as Deficiencia,
+el.TipoElemento
+from (select * from Deficiencias where DEFI_Activo = 1) d  
+inner join (
+   -- POSTES
+    SELECT  
+        p.POST_Interno        AS Interno,
+        p.POST_CodigoNodo     AS Codigo,
+        p.POST_Etiqueta AS Etiqueta,
+        p.ALIM_Interno AS Alimentador,
+        p.POST_Subestacion AS Subestacion,
+        'POST' as TipoElemento
+    FROM  Postes p where POST_EsBT = 1 and p.POST_Terceros = 0
+    UNION ALL
+    -- VANOS
+    SELECT  
+        v.VANO_Interno        AS Interno,
+        v.VANO_Codigo         AS Codigo,
+        v.VANO_Etiqueta AS Etiqueta,
+        v.ALIM_Interno AS Alimentador,
+        v.VANO_Subestacion AS Subestacion,
+        'VANO' as TipoElemento
+    FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0
+) as el on el.TipoElemento = d.DEFI_TipoElemento and el.Interno = d.DEFI_IdElemento
+inner join Seds s on s.SED_Interno = el.Subestacion
+left join Tipificaciones t on d.TIPI_Interno = t.TIPI_Interno
+left join Codigos c on t.CODI_Interno = c.CODI_Interno
+where s.SED_Codigo = ?
+) as t 
+group by t.Deficiencia,t.TipoElemento
+
+union all
+
+select 
+2 as Ordern,
+count(t.Deficiencia) as Total,
+'TOTAL DEF' as Defiencia,
+t.TipoElemento,
+t.Deficiencia as Estado 
+from (
+select
+el.Codigo,
+iif(c.CODI_Codigo is null,'SIN DEF','CON DEF') as Deficiencia,
+el.TipoElemento
+from (select * from Deficiencias where DEFI_Activo = 1) d  
+inner join (
+   -- POSTES
+    SELECT  
+        p.POST_Interno        AS Interno,
+        p.POST_CodigoNodo     AS Codigo,
+        p.POST_Etiqueta AS Etiqueta,
+        p.ALIM_Interno AS Alimentador,
+        p.POST_Subestacion AS Subestacion,
+        'POST' as TipoElemento
+    FROM  Postes p where POST_EsBT = 1 and p.POST_Terceros = 0
+    UNION ALL
+    -- VANOS
+    SELECT  
+        v.VANO_Interno        AS Interno,
+        v.VANO_Codigo         AS Codigo,
+        v.VANO_Etiqueta AS Etiqueta,
+        v.ALIM_Interno AS Alimentador,
+        v.VANO_Subestacion AS Subestacion,
+        'VANO' as TipoElemento
+    FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0
+) as el on el.TipoElemento = d.DEFI_TipoElemento and el.Interno = d.DEFI_IdElemento
+inner join Seds s on s.SED_Interno = el.Subestacion
+left join Tipificaciones t on d.TIPI_Interno = t.TIPI_Interno
+left join Codigos c on t.CODI_Interno = c.CODI_Interno
+where s.SED_Codigo = ? and c.CODI_Codigo is not null
+) as t 
+group by t.Deficiencia,t.TipoElemento
+
+union all 
+
+select 
+4 as Ordern,
+count(t.Deficiencia) as Total,
+'TOTAL' as Defiencia,
+t.TipoElemento,
+t.Deficiencia as Estado 
+from (
+select
+el.Codigo,
+iif(c.CODI_Codigo is null,'TOTAL','TOTAL') as Deficiencia,
+el.TipoElemento
+from (select * from Deficiencias where DEFI_Activo = 1) d  
+inner join (
+   -- POSTES
+    SELECT  
+        p.POST_Interno        AS Interno,
+        p.POST_CodigoNodo     AS Codigo,
+        p.POST_Etiqueta AS Etiqueta,
+        p.ALIM_Interno AS Alimentador,
+        p.POST_Subestacion AS Subestacion,
+        'POST' as TipoElemento
+    FROM  Postes p where POST_EsBT = 1 and p.POST_Terceros = 0
+    UNION ALL
+    -- VANOS
+    SELECT  
+        v.VANO_Interno        AS Interno,
+        v.VANO_Codigo         AS Codigo,
+        v.VANO_Etiqueta AS Etiqueta,
+        v.ALIM_Interno AS Alimentador,
+        v.VANO_Subestacion AS Subestacion,
+        'VANO' as TipoElemento
+    FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0
+) as el on el.TipoElemento = d.DEFI_TipoElemento and el.Interno = d.DEFI_IdElemento
+inner join Seds s on s.SED_Interno = el.Subestacion
+left join Tipificaciones t on d.TIPI_Interno = t.TIPI_Interno
+left join Codigos c on t.CODI_Interno = c.CODI_Interno
+where s.SED_Codigo = ?
+) as t
+group by t.Deficiencia,t.TipoElemento
+) as t
+order by t.TipoElemento,t.Orden
+"""
+
+queryTotalElementoInspeccionadosxDeficiencia = """
+select  t.Codigo,t.Deficiencia,t.TipoElemento from (
+select * from (
+select distinct
+el.Codigo,
+iif(c.CODI_Codigo is null,'SIN DEF','DEF') as Deficiencia,
+el.TipoElemento,
+iif(c.CODI_Codigo is null,3,1) as Orden
+from (select * from Deficiencias where DEFI_Activo = 1) d 
+inner join (
+   -- POSTES
+    SELECT  
+        p.POST_Interno        AS Interno,
+        p.POST_CodigoNodo     AS Codigo,
+        p.POST_Etiqueta AS Etiqueta,
+        p.ALIM_Interno AS Alimentador,
+        p.POST_Subestacion AS Subestacion,
+        'POST' as TipoElemento
+    FROM  Postes p where POST_EsBT = 1 and p.POST_Terceros = 0
+    UNION ALL
+    -- VANOS
+    SELECT  
+        v.VANO_Interno        AS Interno,
+        v.VANO_Codigo         AS Codigo,
+        v.VANO_Etiqueta AS Etiqueta,
+        v.ALIM_Interno AS Alimentador,
+        v.VANO_Subestacion AS Subestacion,
+        'VANO' as TipoElemento
+    FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0
+) as el on el.TipoElemento = d.DEFI_TipoElemento and el.Interno = d.DEFI_IdElemento
+inner join Seds s on s.SED_Interno = el.Subestacion
+left join Tipificaciones t on d.TIPI_Interno = t.TIPI_Interno
+left join Codigos c on t.CODI_Interno = c.CODI_Interno
+where s.SED_Codigo = ? and el.TipoElemento = ?
+) as t
+
+union all
+
+select 
+convert( varchar,count(t.Deficiencia)) as Total,
+t.Deficiencia,
+t.TipoElemento,
+iif(t.Deficiencia = 'TOTAL SIN DEF',4,2) as Orden
+from (
+select distinct
+el.Codigo,
+iif(c.CODI_Codigo is null,'TOTAL SIN DEF','TOTAL DEF') as Deficiencia,
+el.TipoElemento
+from (select * from Deficiencias where DEFI_Activo = 1) d  
+inner join (
+   -- POSTES
+    SELECT  
+        p.POST_Interno        AS Interno,
+        p.POST_CodigoNodo     AS Codigo,
+        p.POST_Etiqueta AS Etiqueta,
+        p.ALIM_Interno AS Alimentador,
+        p.POST_Subestacion AS Subestacion,
+        'POST' as TipoElemento
+    FROM  Postes p where POST_EsBT = 1 and p.POST_Terceros = 0
+    UNION ALL
+    -- VANOS
+    SELECT  
+        v.VANO_Interno        AS Interno,
+        v.VANO_Codigo         AS Codigo,
+        v.VANO_Etiqueta AS Etiqueta,
+        v.ALIM_Interno AS Alimentador,
+        v.VANO_Subestacion AS Subestacion,
+        'VANO' as TipoElemento
+    FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0
+) as el on el.TipoElemento = d.DEFI_TipoElemento and el.Interno = d.DEFI_IdElemento
+inner join Seds s on s.SED_Interno = el.Subestacion
+left join Tipificaciones t on d.TIPI_Interno = t.TIPI_Interno
+left join Codigos c on t.CODI_Interno = c.CODI_Interno
+where s.SED_Codigo = ? and el.TipoElemento = ?
+) as t 
+group by t.Deficiencia,t.TipoElemento 
+
+) as t
+order by TipoElemento, Orden
+"""

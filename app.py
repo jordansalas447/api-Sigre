@@ -2,7 +2,7 @@ from flask import Flask, send_file, request , jsonify
 from flask_cors import CORS
 from generarreporteSealV1 import GenerarReporte
 from config import get_connection
-from globals import queryElemetosxSed , queryElemetosNoInspeccionados ,queryEstadodeElementos,queryReporteRevision
+from globals import TotalDeficienciasxElemento, queryElemetosxSed , queryElemetosNoInspeccionados ,queryEstadodeElementos,queryReporteRevision,ConsInsTotalDesglosado,queryTotalElementoInspeccionadosxDeficiencia
 
 #cnxn = Config.cnxn
 #cursor = cnxn.cursor()
@@ -437,6 +437,66 @@ def ElemetosNoInspeccionados():
     #finally:
         #cursor.close()
         #cnxn.close()  
+
+
+@app.route('/desglosadoelementosdeficiencia', methods=['GET'])
+def desglosadoelementosdeficiencia():
+    try:
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
+        SEDCodigo = request.args.get('SEDCodigo')
+        TipoElemento = request.args.get('TipoElemento')
+
+        if not SEDCodigo:
+            return jsonify({"error": "SEDCodigo es requerido"}), 400
+        
+        if not TipoElemento:
+            return jsonify({"error": "TipoElemento es requerido"}), 400
+
+        # ----------- CONSULTA 1 -------------------
+        query = queryTotalElementoInspeccionadosxDeficiencia
+        
+        cursor.execute(query, SEDCodigo,TipoElemento,SEDCodigo,TipoElemento)
+        
+        columns = [column[0] for column in cursor.description]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        return jsonify({
+            "data": rows
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  
+
+
+@app.route('/totalelementosxdeficiencias', methods=['GET'])
+def totalelementosxdeficiencias():
+    try:
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
+        SEDCodigo = request.args.get('SEDCodigo')
+
+        if not SEDCodigo:
+            return jsonify({"error": "SEDCodigo es requerido"}), 400
+
+        # ----------- CONSULTA 1 -------------------
+        query = TotalDeficienciasxElemento
+        
+        cursor.execute(query, SEDCodigo,SEDCodigo,SEDCodigo)
+        
+        columns = [column[0] for column in cursor.description]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        return jsonify({
+            "data": rows
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  
 
 
 @app.route('/exportar-reporte-revision', methods=['GET'])

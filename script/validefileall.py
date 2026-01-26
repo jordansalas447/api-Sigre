@@ -18,12 +18,12 @@ cursor = cnxn.cursor()
 
 query = """
 SELECT
---CASE 
- --   WHEN seg.value = '7004' THEN replace(t.Ruta,'/7004/',concat('/',seg.value,'/',convert(nvarchar,t.Contador),'/'))
- --   ELSE replace(t.Ruta,'/7004/',concat('/',seg.value,'/'))
---END as Corregido,
-   -- replace(t.Ruta,'/7004/',concat('/',seg.value,'/')) as Corregido,
-   -- seg.value AS segmento_6,
+CASE 
+    WHEN seg.value = '7004' THEN replace(t.Ruta,'/7004/',concat('/',seg.value,'/',convert(nvarchar,t.Contador),'/'))
+    ELSE replace(t.Ruta,'/7004/',concat('/',seg.value,'/'))
+END as Corregido,
+    replace(t.Ruta,'/7004/',concat('/',seg.value,'/')) as Corregido,
+    seg.value AS segmento_6,
     t.ARCH_Nombre
 FROM (
 select * from (
@@ -126,7 +126,7 @@ CROSS APPLY (
 WHERE t.NombreArchivo NOT LIKE '%.m4a';
         """
 
-cursor.execute(query,'8221','8221')
+cursor.execute(query,'1535','1535')
 rutas = ['D:\\compartir\\Fotos-Reportes\\' + fila[0] for fila in cursor.fetchall()]
 
 cnxn.close()
