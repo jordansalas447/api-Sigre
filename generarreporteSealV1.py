@@ -22,7 +22,7 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
     cnxn = get_connection()
     cursor = cnxn.cursor()
     
-    ruta_del_archivo_existente = 'D:/SigreWeb/ProjectoSigre/SigreApiRest/Reporte/ReportesSigre.xlsx'
+    ruta_del_archivo_existente = r'C:\Users\Usuario\Documents\SigreWeb\sigreweb-main\api-Sigre\Reporte\ReportesSigre.xlsx'
     #POSTES
     #cursor.execute("BEGIN TRANSACTION")  
     #cursor.execute("sp_UpdateCorregirRutas " + CodAlim)
@@ -57,7 +57,7 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
         #"TIPI1082": [],
         #"TIPI1086": [],
         "Criticidad": [],
-        "Espacio11":"",
+        "Fotos":[],
         "Ruta": [],
         "Espacio06":"",
         "Espacio07":"",
@@ -87,12 +87,14 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
         #data_lists["TIPI1082"].append(str(rows[15]).replace('None',''))
         #data_lists["TIPI1086"].append(str(rows[16]).replace('None',''))
         data_lists["Criticidad"].append(str(rows[14]).replace('None',''))
+        data_lists['Fotos'].append(str(rows[20]).replace('None',''))
         data_lists["Ruta"].append('=HYPERLINK("'+BASEPATH+  str(rows[15]).replace('None','') + '","Ver Fotos")')
         #data_lists["S0"].append(int(ConvertirNoneto0(rows[16])))
         #data_lists["S1"].append(int(ConvertirNoneto0(rows[17])))
         #data_lists["S2"].append(int(ConvertirNoneto0(rows[18])))
         data_lists["N"].append(int(ConvertirNoneto0(rows[19])))
         data_lists["Total"].append(ConvertirNoneto0(rows[16]) + ConvertirNoneto0(rows[17]) + ConvertirNoneto0(rows[18]) + ConvertirNoneto0(rows[19]))
+        
         Alimentador.append(str(rows[0]))
         Fecha.append(str(rows[1]))
 
@@ -112,7 +114,7 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
     # Paso 3: Seleccionar la hoja en la que deseas escribir
     # Puedes usar wb['Nombre_de_la_Hoja'] si no es la hoja activa
 
-    hoja['N4'] = 'Consorcio Arce SRL - AEE SRL'
+    hoja['N4'] = 'ARJEN SRL'
     hoja['N5'] = Alimentador[0]
     hoja['N6'] = Fecha[0]
     rango_origen_CuadroSumTotal = hoja["B8:I23"] 
@@ -218,6 +220,7 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
     TIPI5030 = []
     TIPI5032 = []
     TIPI5038 = []
+    Fotos = []
     Criticidad = []
     Ruta = []
     
@@ -242,6 +245,7 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
             TIPI7006.append(str(rows[7]).replace('None',''))
             TIPI7008.append(str(rows[8]).replace('None',''))
             Criticidad.append(str(rows[9]).replace('None',''))
+            Fotos.append(str(rows[15]).replace('None',''))
             Ruta.append('=HYPERLINK("'+BASEPATH+  str(rows[10]).replace('None','') + '","Ver Fotos")')
 
             #S0.append(int(ConvertirNoneto0(rows[11])))
@@ -265,7 +269,7 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
     #results.append(TIPI5032)
     #results.append(TIPI5038)
     results.append(Criticidad)
-    results.append([''])
+    results.append(Fotos)
     results.append(Ruta)
     results.append([''])
     results.append([''])
@@ -287,7 +291,7 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
     # Paso 3: Seleccionar la hoja en la que deseas escribir
      # Puedes usar wb['Nombre_de_la_Hoja'] si no es la hoja activa
 
-    hoja['N4'] = 'Consorcio Arce SRL - AEE SRL'
+    hoja['N4'] = 'ARJEN SRL'
     hoja['N5'] = Alimentador[0]
     hoja['N6'] = Fecha[0]
     rango_origen_CuadroSumTotal = hoja["B6:I19"] 

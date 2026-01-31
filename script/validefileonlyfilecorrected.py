@@ -26,17 +26,10 @@ cursor = cnxn.cursor()
 
 query = """
 SELECT distinct
---CASE 
-  --  WHEN t.CODI_Codigo = '7004' THEN replace(t.Ruta,'/7004/',concat('/7004/',convert(nvarchar,t.Contador),'/'))
-  --  WHEN seg.value = '7004' THEN replace(t.Ruta,'/7004/',concat('/',seg.value,'/',convert(nvarchar,t.Contador),'/'))
-  --  WHEN t.CODI_Codigo = '7004' THEN replace(t.Ruta,'/7004/',concat('/',seg.value,'/'))
-  --  ELSE replace(t.Ruta,'/7004/',concat('/',seg.value,'/'))
---END as Corregido,
-   -- replace(t.Ruta,'/7004/',concat('/',seg.value,'/')) as Corregido,
-   -- seg.value AS segmento_6,
-   -- t.ARCH_Nombre--,
-   -- RIGHT(t.ARCH_Nombre, CHARINDEX('/', REVERSE(t.ARCH_Nombre)) - 1)--,
-    REPLACE(t.ARCH_Nombre,RIGHT(t.ARCH_Nombre, CHARINDEX('/', REVERSE(t.ARCH_Nombre)) - 1),'') as SiNombreMal
+CASE 
+    WHEN t.CODI_Codigo = '7004' THEN replace(t.Ruta,'/7004/',concat('/7004/',convert(nvarchar,t.Contador),'/'))
+      ELSE t.Ruta
+END as Corregido
 FROM (
 select * from (
 select distinct
@@ -71,7 +64,7 @@ from (
         p.ALIM_Interno AS Alimentador,
         p.POST_Subestacion AS Subestacion,
         'POST' as TipoElemento
-    FROM  Postes p where POST_EsBT = 1
+    FROM  Postes p where POST_EsBT = 1 and p.POST_Terceros = 0
     UNION ALL
     -- VANOS
     SELECT  
@@ -81,7 +74,7 @@ from (
         v.ALIM_Interno AS Alimentador,
         v.VANO_Subestacion AS Subestacion,
         'VANO' as TipoElemento
-    FROM  Vanos v where v.VANO_EsBT = 1 ) as el
+    FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0 ) as el
     inner join Seds s on el.Subestacion = s.SED_Interno
     left join (select * from Deficiencias d where DEFI_Activo = 1) d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
     left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
@@ -105,7 +98,7 @@ from (
         p.ALIM_Interno AS Alimentador,
         p.POST_Subestacion AS Subestacion,
         'POST' as TipoElemento
-    FROM  Postes p where POST_EsBT = 1
+    FROM  Postes p where POST_EsBT = 1 and p.POST_Terceros = 0
     UNION ALL
     -- VANOS
     SELECT  
@@ -115,7 +108,7 @@ from (
         v.ALIM_Interno AS Alimentador,
         v.VANO_Subestacion AS Subestacion,
         'VANO' as TipoElemento
-    FROM  Vanos v where v.VANO_EsBT = 1
+    FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0
     ) as el 
     inner join (select * from Deficiencias where DEFI_Activo = 1) d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
     inner join Seds s on s.SED_Interno = el.Subestacion
@@ -139,11 +132,14 @@ CROSS APPLY (
 WHERE t.NombreArchivo NOT LIKE '%.m4a';
         """
 
-cursor.execute(query,'8223','8223')
 
-BASE_ruta = r'\\192.168.1.49\h\Revision\Fiscal\Fotos-Reportes/'
+CodIns = '1609'
 
-BASE_ruta1 = r'D:\compartir\Fotos-Reportes/'
+cursor.execute(query,CodIns,CodIns)
+
+BASE_ruta = r'D:\Fotos-Reportes/'
+
+#BASE_ruta1 = r'D:\compartir\Fotos-Reportes/'
 
 rutas = [BASE_ruta + fila[0] for fila in cursor.fetchall()]
 
@@ -162,7 +158,10 @@ for ruta in rutas:
 
         jpgs = list(carpeta.glob("*.jpg")) + list(carpeta.glob("*.jpeg"))
 
-        if not jpgs:
+        if jpgs:
+            ""
+            print(f"✅ {ruta} existe y tiene {len(jpgs)} archivos JPG")
+        else:   
             print(f"⚠️ {ruta} existe pero no tiene archivos JPG")
     else:
         print(f"❌ No existe: {ruta}")

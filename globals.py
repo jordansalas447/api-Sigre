@@ -208,21 +208,42 @@ select distinct
 el.Codigo,
 el.Etiqueta,
 el.TipoElemento,
+el.NodoInicial,
+el.NodoFinal,
+--el.DEFI_Estado,
 iif( t.Criticidad is null ,convert(nvarchar,el.DEFI_EstadoCriticidad),t.Criticidad) as Criticidad,
-iif(t.Tipificacion is null,convert(nvarchar,el.TIPI_Interno),t.Tipificacion) as Tipificacion,
+iif(t.Tipificacion is null,convert(nvarchar,el.CODI_Codigo),t.Tipificacion) as Tipificacion,
 iif(t.ALIM_Etiqueta is null,el.DEFI_CodAMT,t.ALIM_Etiqueta) as Alimentador,
 t.SED_Codigo,
 iif(t.NumSuministro is null,el.DEFI_NumSuministro,t.NumSuministro) as NumSuministro ,
-t.DEFI_DistHorizontal,
-t.DEFI_DistVertical,
+iif(t.DEFI_DistHorizontal is null,el.DEFI_DistHorizontal,t.DEFI_DistHorizontal) as DistanciaHorizontal,
+iif(t.DEFI_DistVertical is null,el.DEFI_DistVertical,t.DEFI_DistVertical) as DEFI_DistVertical,
 iif(t.DEFI_FecRegistro is null,el.DEFI_FecRegistro,t.DEFI_FecRegistro) as FechaRegistro,
 iif(t.Observacion is null,el.DEFI_Observacion,t.Observacion) as Observacion,
 iif(t.Comentario is null,el.DEFI_Comentario,t.Comentario) as Comentario,
 iif(t.USUA_Nombres is null, el.USUA_Nombres,t.USUA_Nombres) as Inspector,
-t.Corregido,
-concat('=HYPERLINK("',t.Corregido,'";"','Ver Fotos','")' ) as Enlaces
+iif(t.Corregido is null,el.Ruta,t.Corregido) as Corregido
 from (
-select * from
+select 
+el.*,
+u.*,
+d.*,
+c.CODI_Codigo,
+CONCAT(
+--'D:/Fotos-Reportes/',
+a.ALIM_Etiqueta,
+'/',
+s.SED_Codigo,
+'/',
+CASE 
+    WHEN el.TipoElemento = 'POST' THEN 'Poste'
+    ELSE 'Vano'
+END,'/',
+el.Codigo,
+'/',
+iif(c.CODI_Codigo is null,'SINDEF',c.CODI_Codigo),'/'
+) as Ruta
+from
  (   
    -- POSTES
     SELECT  
@@ -231,6 +252,8 @@ select * from
         p.POST_Etiqueta AS Etiqueta,
         p.ALIM_Interno AS Alimentador,
         p.POST_Subestacion AS Subestacion,
+        '' as NodoInicial,
+        '' as NodoFinal,
         'POST' as TipoElemento
     FROM  Postes p where POST_EsBT = 1 and p.POST_Terceros = 0
     UNION ALL
@@ -241,17 +264,24 @@ select * from
         v.VANO_Etiqueta AS Etiqueta,
         v.ALIM_Interno AS Alimentador,
         v.VANO_Subestacion AS Subestacion,
+        v.VANO_NodoInicial as NodoInicial,
+        v.VANO_NodoFinal as NodoFinal,
         'VANO' as TipoElemento
     FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0 
   ) as el 
   left join (select * from Deficiencias d where d.DEFI_Activo = 1) as d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
-  left join Usuarios u on u.USUA_Interno = d.DEFI_UsuarioInic
+  left join Usuarios u on convert(nvarchar,u.USUA_Interno) = convert(nvarchar,d.DEFI_UsuarioInic)
+  left join Seds s on s.SED_Interno = el.Subestacion
+  left join Alimentadores a on a.ALIM_Interno = el.Alimentador
+  left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
+  left join Codigos c on c.CODI_Interno = t.CODI_Interno
 ) 
 as el left  join
 (
 SELECT distinct
 t.Codigo,
 t.Etiqueta,
+t.DEFI_Interno,
 t.TipoElemento,
 CASE 
     WHEN t.DEFI_EstadoCriticidad = 1 THEN 'Leve'
@@ -269,15 +299,14 @@ t.DEFI_FecRegistro,
 iif(t.DEFI_Observacion is null, '',t.DEFI_Observacion) as Observacion,
 iif(t.DEFI_Comentario is null, '',t.DEFI_Comentario) as Comentario,
 t.USUA_Nombres,
-    replace(t.Ruta,'/7004/',concat('/',seg.value,'/')) as Corregido--,
---   seg.value AS segmento_6,
- --   t.ARCH_Nombre
+t.Ruta as Corregido
 FROM (
 select * from (
 select distinct
 el.Codigo,
 el.Etiqueta,
 el.TipoElemento,
+d.DEFI_Interno,
 d.DEFI_EstadoCriticidad,
 c.CODI_Codigo,
 a.ALIM_Etiqueta ,
@@ -290,7 +319,7 @@ d.DEFI_Observacion,
 d.DEFI_Comentario,
 u.USUA_Nombres,
 CONCAT(
-'D:/Fotos-Reportes/',
+--'D:/Fotos-Reportes/',
 a.ALIM_Etiqueta,
 '/',
 s.SED_Codigo,
@@ -303,13 +332,8 @@ END,
 el.Codigo,
 '/',
 iif(c.CODI_Codigo is null,'SINDEF',c.CODI_Codigo),
-'/'
---t1.Contador,
---iif(t1.Contador is null,'', '/'),
---RIGHT(ar.ARCH_Nombre, CHARINDEX('/', REVERSE(ar.ARCH_Nombre)) - 1)
-) as Ruta,
-RIGHT(ar.ARCH_Nombre, CHARINDEX('/', REVERSE(ar.ARCH_Nombre)) - 1) AS NombreArchivo,
-ar.ARCH_Nombre
+'/',t1.Contador
+) as Ruta
 from (   
    -- POSTES
     SELECT  
@@ -373,22 +397,13 @@ from (
     GROUP BY el.Codigo,c.CODI_Codigo,d.DEFI_Interno
      ) as t1 on t1.DEFI_Interno = d.DEFI_Interno
       where s.SED_Codigo = ? and d.DEFI_Activo = 1) as t
-      where t.NombreArchivo not like '%.m4a'
+     -- where t.NombreArchivo not like '%.m4a'
 ) t
-CROSS APPLY (
-    SELECT value
-    FROM (
-        SELECT value,
-               ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS pos
-        FROM STRING_SPLIT(t.ARCH_Nombre, '/')
-    ) x
-    WHERE x.pos = 6
-) seg
-WHERE t.NombreArchivo NOT LIKE '%.m4a') 
-as t on t.Codigo = el.Codigo and t.TipoElemento = el.TipoElemento
+-- WHERE t.NombreArchivo NOT LIKE '%.m4a'
+) as t on t.Codigo = el.Codigo and t.TipoElemento = el.TipoElemento and t.DEFI_Interno = el.DEFI_Interno
 inner join Seds s on s.SED_Interno = el.Subestacion
 where s.SED_Codigo = ?
-order by t.Corregido desc
+order by iif(t.ALIM_Etiqueta is null,el.DEFI_CodAMT,t.ALIM_Etiqueta) desc
 """
 
 
