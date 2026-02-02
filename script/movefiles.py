@@ -42,11 +42,11 @@ END,
 el.Codigo,
 '/',
 iif(c.CODI_Codigo is null,'SINDEF',c.CODI_Codigo),
-'/'
+'/'--,t1.Contador
 ) as Ruta,
 t1.Contador,
 c.CODI_Codigo,
-RIGHT(ar.ARCH_Nombre, CHARINDEX('/', REVERSE(ar.ARCH_Nombre)) - 1) AS NombreArchivo,
+--replace(ar.ARCH_Nombre,RIGHT(ar.ARCH_Nombre, CHARINDEX('/', REVERSE(ar.ARCH_Nombre)) - 1),'') AS ARCH_Nombre--,
 ar.ARCH_Nombre
 from (   
    -- POSTES
@@ -74,13 +74,57 @@ from (
     left join Codigos c on c.CODI_Interno = t.CODI_Interno
     left join Alimentadores a on a.ALIM_Interno = el.Alimentador
     left join Usuarios u on u.USUA_Interno = d.DEFI_UsuarioMod
-    left join Archivos ar on ar.ARCH_CodTabla = d.DEFI_Interno
+    left join (
+   select * from (
+    select distinct
+    el.Codigo,
+    case 
+    when replace(ARCH_Nombre,RIGHT(ARCH_Nombre, CHARINDEX('/', REVERSE(ARCH_Nombre)) - 1),'') 
+    like concat('%', d.DEFI_NumSuministro,'%')
+    then replace(ARCH_Nombre,RIGHT(ARCH_Nombre, CHARINDEX('/', REVERSE(ARCH_Nombre)) - 1),'') 
+    end ARCH_Nombre,
+    ARCH_IdElemento,
+    ARCH_TipoElemento,
+    d.DEFI_Interno--,
+    --replace(ARCH_Nombre,RIGHT(ARCH_Nombre, CHARINDEX('/', REVERSE(ARCH_Nombre)) - 1),'') AS ARCH_Nombre 
+    from  Archivos a
+    inner join Deficiencias d on d.DEFI_IdElemento = a.ARCH_IdElemento and d.DEFI_TipoElemento = a.ARCH_TipoElemento
+    inner join 
+    (   
+   -- POSTES
+    SELECT  
+        p.POST_Interno        AS Interno,
+        p.POST_CodigoNodo     AS Codigo,
+        p.POST_Etiqueta AS Etiqueta,
+        p.ALIM_Interno AS Alimentador,
+        p.POST_Subestacion AS Subestacion,
+        'POST' as TipoElemento
+    FROM  Postes p where POST_EsBT = 1 and p.POST_Terceros = 0
+    UNION ALL
+    -- VANOS
+    SELECT  
+        v.VANO_Interno        AS Interno,
+        v.VANO_Codigo         AS Codigo,
+        v.VANO_Etiqueta AS Etiqueta,
+        v.ALIM_Interno AS Alimentador,
+        v.VANO_Subestacion AS Subestacion,
+        'VANO' as TipoElemento
+    FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0) as el on 
+    el.TipoElemento = a.ARCH_TipoElemento and 
+    el.Interno = a.ARCH_IdElemento
+    inner join Seds s on s.SED_Interno = el.Subestacion
+    where s.SED_Codigo = ?
+    ) as t where t.ARCH_Nombre is not null
+    )
+    ar on ar.ARCH_IdElemento = el.Interno and ar.ARCH_TipoElemento = el.TipoElemento and d.DEFI_Interno = ar.DEFI_Interno
     left join
     (
     select 
     el.Codigo,
+    el.Interno,
     c.CODI_Codigo,
     d.DEFI_Interno,
+    el.TipoElemento,
     ROW_NUMBER() OVER (PARTITION BY el.Codigo,c.CODI_Codigo ORDER BY el.Codigo,c.CODI_Codigo) AS Contador
     from (
        -- POSTES
@@ -108,10 +152,15 @@ from (
     left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
     left join Codigos c on c.CODI_Interno = t.CODI_Interno
     where s.SED_Codigo = ? and c.CODI_Codigo = '7004'
-    GROUP BY el.Codigo,c.CODI_Codigo,d.DEFI_Interno
-     ) as t1 on t1.DEFI_Interno = d.DEFI_Interno
+    GROUP BY el.Codigo,c.CODI_Codigo,d.DEFI_Interno,el.TipoElemento,el.Interno
+     ) as t1 on 
+     t1.DEFI_Interno = d.DEFI_Interno -- and 
+--     t1.Codigo = d.DEFI_CodigoElemento and 
+ --    t1.TipoElemento = d.DEFI_TipoElemento and
+  --   t1.TipoElemento = ar.ARCH_TipoElemento and
+ ---    t1.Interno = ar.ARCH_IdElemento
       where s.SED_Codigo = ? and d.DEFI_Activo = 1) as t
-      where t.NombreArchivo not like '%.m4a'
+    --  where t.NombreArchivo not like '%.m4a'
 ) t
 CROSS APPLY (
     SELECT value
@@ -122,15 +171,16 @@ CROSS APPLY (
     ) x
     WHERE x.pos = 6
 ) seg
-WHERE t.NombreArchivo NOT LIKE '%.m4a';
 """
 
-CodIns = '8402'
+CodIns = '2095'
 
-cursor.execute(query,CodIns,CodIns) 
+cursor.execute(query,CodIns,CodIns,CodIns) 
 row = cursor.fetchone() 
 
 BasePATH = 'D:\\Fotos-Reportes\\'
+
+#BasePATHRemoto = '\\\\192.168.1.52\\h\\Revision\\Arequipa\\Fotos-Reportes\\'
 
 def mover_estructura_de_carpetas(PATH_origen, PATH_destino):
     try:

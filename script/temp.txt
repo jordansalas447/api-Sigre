@@ -1,40 +1,18 @@
-from pathlib import Path
-import pyodbc
-
-CONNECTION_STRING3 = (
-   r"Driver={ODBC Driver 18 for SQL Server};"
-     r"Server=serversigre.database.windows.net,1433;"
-     r"Database=sigre;"
-     r"UID=usersigre;"
-     r"PWD=Sigrebt#2025;"
-     r"Encrypt=yes;"
-     r"TrustServerCertificate=no;"
-     r"Connection Timeout=30"
-     r"MARS_Connection=Yes;"
-)
-
-CONNECTION_STRING2 = (
-   r"Driver={ODBC Driver 18 for SQL Server};"
-   r"Server=.\SQLEXPRESS;"
-   r"Database=Sigre;"
-   r"Trusted_Connection=yes;"
-   r"TrustServerCertificate=yes;"
-)
-
-cnxn = pyodbc.connect(CONNECTION_STRING2)
-cursor = cnxn.cursor()
-
-query = """
 SELECT distinct
+CASE 
+    WHEN seg.value = '7004' THEN replace(t.Ruta,'/7004/',concat('/',seg.value,'/',convert(nvarchar,t.Contador),'/'))
+    ELSE replace(t.Ruta,'/7004/',concat('/',seg.value,'/'))
+  --    ELSE t.Ruta
+END as Corregido,
 CASE 
     WHEN t.CODI_Codigo = '7004' THEN replace(t.Ruta,'/7004/',concat('/7004/',convert(nvarchar,t.Contador),'/'))
       ELSE t.Ruta
-END as Corregido
+END as Corregido2--,
+--t.CODI_Codigo,
+  --  seg.value AS segmento_6
 FROM (
 select * from (
 select distinct
-d.DEFI_CodigoElemento,
-d.DEFI_Activo,
 CONCAT(
 a.ALIM_Etiqueta,
 '/',
@@ -48,15 +26,12 @@ END,
 el.Codigo,
 '/',
 iif(c.CODI_Codigo is null,'SINDEF',c.CODI_Codigo),
-'/'--,
---t1.Contador,
---iif(t1.Contador is null,'', '/'),
---RIGHT(ar.ARCH_Nombre, CHARINDEX('/', REVERSE(ar.ARCH_Nombre)) - 1)
+'/'
 ) as Ruta,
 t1.Contador,
-c.CODI_Codigo--,
---RIGHT(ar.ARCH_Nombre, CHARINDEX('/', REVERSE(ar.ARCH_Nombre)) - 1) AS NombreArchivo,
---ar.ARCH_Nombre
+c.CODI_Codigo,
+RIGHT(ar.ARCH_Nombre, CHARINDEX('/', REVERSE(ar.ARCH_Nombre)) - 1) AS NombreArchivo,
+ar.ARCH_Nombre
 from (   
    -- POSTES
     SELECT  
@@ -76,14 +51,14 @@ from (
         v.ALIM_Interno AS Alimentador,
         v.VANO_Subestacion AS Subestacion,
         'VANO' as TipoElemento
-    FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0 ) as el
+    FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0) as el
     inner join Seds s on el.Subestacion = s.SED_Interno
     left join (select * from Deficiencias d where DEFI_Activo = 1) d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
     left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
     left join Codigos c on c.CODI_Interno = t.CODI_Interno
     left join Alimentadores a on a.ALIM_Interno = el.Alimentador
     left join Usuarios u on u.USUA_Interno = d.DEFI_UsuarioMod
-    --left join Archivos ar on ar.ARCH_CodTabla = d.DEFI_Interno
+    left join Archivos ar on ar.ARCH_IdElemento = el.Interno and ar.ARCH_TipoElemento = el.TipoElemento
     left join
     (
     select 
@@ -119,58 +94,16 @@ from (
     where s.SED_Codigo = ? and c.CODI_Codigo = '7004'
     GROUP BY el.Codigo,c.CODI_Codigo,d.DEFI_Interno
      ) as t1 on t1.DEFI_Interno = d.DEFI_Interno
-      where s.SED_Codigo = ?) as t
+      where s.SED_Codigo = ? and d.DEFI_Activo = 1) as t
+      where t.NombreArchivo not like '%.m4a'
 ) t
-where t.DEFI_Activo = 1
-        """
-
-
-CodIns = '2095'
-
-cursor.execute(query,CodIns,CodIns)
-
-BASE_ruta = r'D:\Fotos-Reportes/Corregido/'
-
-BASE_Ruta_Compartida = r'\\192.168.1.52\h\Revision\Arequipa/Fotos-Reportes/'
-
-#BASE_ruta1 = r'D:\compartir\Fotos-Reportes/'
-
-rutas = [BASE_ruta + fila[0] for fila in cursor.fetchall()]
-cnxn.close()
-
-# for ruta in rutas:
-#     if ruta and Path(ruta).exists():
-#         ""
-#     else:
-#         print(f"❌ No existe: {ruta}")
-
-
-contador = 0
-total = len(rutas)
-
-existe_con_foto = 0
-existe_sin_foto = 0
-no_existe = 0
-
-for ruta in rutas:
-    contador += 1
-    if ruta and Path(ruta).exists():
-        carpeta = Path(ruta)
-
-        jpgs = list(carpeta.glob("*.jpg")) + list(carpeta.glob("*.jpeg"))
-
-        if jpgs:
-            existe_con_foto += 1
-            print(f"✅ [{contador}/{total}] {ruta} existe y tiene {len(jpgs)} archivos JPG")
-        else:   
-            existe_sin_foto += 1
-            print(f"⚠️ [{contador}/{total}] {ruta} existe pero no tiene archivos JPG")
-    else:
-        no_existe += 1
-        print(f"❌ [{contador}/{total}] No existe: {ruta}")
-
-
-print(f"\nEvaluación completada. Total procesados: {total}")
-print(f"✅ Existe y tiene fotos: {existe_con_foto}")
-print(f"⚠️ Existe pero no tiene fotos: {existe_sin_foto}")
-print(f"❌ No existe: {no_existe}")
+CROSS APPLY (
+    SELECT value
+    FROM (
+        SELECT value,
+               ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS pos
+        FROM STRING_SPLIT(t.ARCH_Nombre, '/')
+    ) x
+    WHERE x.pos = 6
+) seg
+WHERE t.NombreArchivo NOT LIKE '%.m4a';

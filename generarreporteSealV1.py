@@ -22,7 +22,7 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
     cnxn = get_connection()
     cursor = cnxn.cursor()
     
-    ruta_del_archivo_existente = r'C:\Users\Usuario\Documents\SigreWeb\sigreweb-main\api-Sigre\Reporte\ReportesSigre.xlsx'
+    ruta_del_archivo_existente = r'C:\Users\Usuario\Documents\SigreWeb\sigreweb-main\SigreApiRest\Reporte\ReportesSigre.xlsx'
     #POSTES
     #cursor.execute("BEGIN TRANSACTION")  
     #cursor.execute("sp_UpdateCorregirRutas " + CodAlim)

@@ -2,6 +2,7 @@ from flask import Flask, send_file, request , jsonify
 from flask_cors import CORS
 from SigreApiRest.routes.filtros import filtros_bp
 from SigreApiRest.routes.reportes import reportes_bp
+from SigreApiRest.routes.rama import rama_bp
 from SigreApiRest.generarreporteSealV1 import GenerarReporte
 from SigreApiRest.config import get_connection
 from SigreApiRest.globals import TotalDeficienciasxElemento, queryElemetosxSed , queryElemetosNoInspeccionados ,queryEstadodeElementos,queryReporteRevision,ConsInsTotalDesglosado,queryTotalElementoInspeccionadosxDeficiencia
@@ -890,6 +891,7 @@ def insertar_poste():
 
 app.register_blueprint(reportes_bp) 
 app.register_blueprint(filtros_bp) 
+app.register_blueprint(rama_bp)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
