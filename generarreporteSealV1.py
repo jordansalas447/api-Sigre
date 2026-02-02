@@ -11,8 +11,8 @@ from openpyxl.utils.cell import get_column_letter
 from openpyxl.styles import Font, PatternFill
 import asyncio
 from flask import jsonify
-from config import get_connection
-from utils import copiar_formato, Unirceldas, ConvertirNoneto0 , copiar
+from SigreApiRest.config import get_connection
+from SigreApiRest.utils import copiar_formato, Unirceldas, ConvertirNoneto0 , copiar
 
 #cnxn = Config.cnxn
 #cursor = cnxn.cursor()
