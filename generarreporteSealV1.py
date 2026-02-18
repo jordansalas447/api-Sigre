@@ -11,8 +11,8 @@ from openpyxl.utils.cell import get_column_letter
 from openpyxl.styles import Font, PatternFill
 import asyncio
 from flask import jsonify
-from SigreApiRest.config import get_connection
-from SigreApiRest.utils import copiar_formato, Unirceldas, ConvertirNoneto0 , copiar
+from app.config import get_connection
+from app.utils import copiar_formato, Unirceldas, ConvertirNoneto0 , copiar
 
 #cnxn = Config.cnxn
 #cursor = cnxn.cursor()
@@ -24,7 +24,7 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH,NroOrden=""):
     
     print(NroOrden)
     
-    ruta_del_archivo_existente = r'C:\Users\Usuario\Documents\SigreWeb\sigreweb-main\SigreApiRest\Reporte\ReportesSigre.xlsx'
+    ruta_del_archivo_existente = r'C:\Users\Usuario\Documents\SigreWeb\sigreweb-main\app\Reporte\ReportesSigre.xlsx'
     #POSTES
     #cursor.execute("BEGIN TRANSACTION")  
     #cursor.execute("sp_UpdateCorregirRutas " + CodAlim)

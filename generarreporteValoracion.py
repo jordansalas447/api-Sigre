@@ -11,9 +11,9 @@ from openpyxl.utils.cell import get_column_letter
 from openpyxl.styles import Font, PatternFill
 import asyncio
 from flask import jsonify
-from SigreApiRest.config import get_connection
-from SigreApiRest.utils import copiar_formato, Unirceldas, ConvertirNoneto0 , copiar
-from SigreApiRest.Reportes.queryreportes import queryValorizacion
+from app.config import get_connection
+from app.utils import copiar_formato, Unirceldas, ConvertirNoneto0 , copiar
+from app.Reportes.queryreportes import queryValorizacion
 #cnxn = Config.cnxn
 #cursor = cnxn.cursor()
 
@@ -21,7 +21,7 @@ def GenerarReporteValorizacion(CodSed,PathSave="D://"):
     cnxn = get_connection()
     cursor = cnxn.cursor()
     
-    ruta_del_archivo_existente = r'C:\Users\Usuario\Documents\SigreWeb\sigreweb-main\SigreApiRest\Reporte\ReportesSigreValorizacion.xlsx'
+    ruta_del_archivo_existente = r'C:\Users\Usuario\Documents\SigreWeb\sigreweb-main\app\Reporte\ReportesSigreValorizacion.xlsx'
     #POSTES
     cursor.execute(queryValorizacion, CodSed, 'POST')
     records = cursor.fetchall()

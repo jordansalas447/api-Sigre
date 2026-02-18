@@ -2,16 +2,16 @@ import os
 from flask import Flask, send_file, request , jsonify , abort
 from flask_cors import CORS
 from pandas.core.frame import console
-from SigreApiRest.generarreporteValoracion import GenerarReporteValorizacion
-from SigreApiRest.routes.filtros import filtros_bp
-from SigreApiRest.routes.reportes import reportes_bp
-from SigreApiRest.routes.rama import rama_bp
-from SigreApiRest.routes.carpetas import carpetas_bp
-from SigreApiRest.generarreporteSealV1 import GenerarReporte
-from SigreApiRest.config import get_connection
-from SigreApiRest.globals import TotalDeficienciasxElemento, queryElemetosxSed , queryElemetosNoInspeccionados ,queryEstadodeElementos,queryReporteRevision,ConsInsTotalDesglosado,queryTotalElementoInspeccionadosxDeficiencia
-from SigreApiRest.filtros.queryfiltros import queryElemetosDuplicadosxSed,querySindeffyDeffxSed,queryfiltroArchivosDuplicados
-from SigreApiRest.script import movefilesCorregidoEP, validefileonlyfilecorrectedJson
+from app.generarreporteValoracion import GenerarReporteValorizacion
+from app.routes.filtros import filtros_bp
+from app.routes.reportes import reportes_bp
+from app.routes.rama import rama_bp
+from app.routes.carpetas import carpetas_bp
+from app.generarreporteSealV1 import GenerarReporte
+from app.config import get_connection
+from app.globals import TotalDeficienciasxElemento, queryElemetosxSed , queryElemetosNoInspeccionados ,queryEstadodeElementos,queryReporteRevision,ConsInsTotalDesglosado,queryTotalElementoInspeccionadosxDeficiencia
+from app.filtros.queryfiltros import queryElemetosDuplicadosxSed,querySindeffyDeffxSed,queryfiltroArchivosDuplicados
+from app.script import movefilesCorregidoEP, validefileonlyfilecorrectedJson
 #cnxn = Config.cnxn
 #cursor = cnxn.cursor()
 

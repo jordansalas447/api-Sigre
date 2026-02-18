@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from SigreApiRest.filtros.queryfiltros import queryElemetosDuplicadosxSed, querySindeffyDeffxSed, queryfiltroArchivosDuplicados , queryNodoIF
+from app.filtros.queryfiltros import queryElemetosDuplicadosxSed, querySindeffyDeffxSed, queryfiltroArchivosDuplicados , queryNodoIF
 from ..config import get_connection
 
 filtros_bp = Blueprint('filtros', __name__, url_prefix='/filtros')
