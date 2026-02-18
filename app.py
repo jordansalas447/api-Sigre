@@ -1,12 +1,17 @@
-from flask import Flask, send_file, request , jsonify
+import os
+from flask import Flask, send_file, request , jsonify , abort
 from flask_cors import CORS
+from pandas.core.frame import console
+from SigreApiRest.generarreporteValoracion import GenerarReporteValorizacion
 from SigreApiRest.routes.filtros import filtros_bp
 from SigreApiRest.routes.reportes import reportes_bp
 from SigreApiRest.routes.rama import rama_bp
+from SigreApiRest.routes.carpetas import carpetas_bp
 from SigreApiRest.generarreporteSealV1 import GenerarReporte
 from SigreApiRest.config import get_connection
 from SigreApiRest.globals import TotalDeficienciasxElemento, queryElemetosxSed , queryElemetosNoInspeccionados ,queryEstadodeElementos,queryReporteRevision,ConsInsTotalDesglosado,queryTotalElementoInspeccionadosxDeficiencia
 from SigreApiRest.filtros.queryfiltros import queryElemetosDuplicadosxSed,querySindeffyDeffxSed,queryfiltroArchivosDuplicados
+from SigreApiRest.script import movefilesCorregidoEP, validefileonlyfilecorrectedJson
 #cnxn = Config.cnxn
 #cursor = cnxn.cursor()
 
@@ -22,9 +27,10 @@ def Inicio():
 def ExportarReportePresentacionSeal():
 
     #try:
-
         cnxn = get_connection()
         cursor = cnxn.cursor()
+        
+        NroOrden = request.args.get('NroOrden')
 
         CodSubestacion = request.form.get('CodSubestacion') 
         cursor.execute("EXEC sp_ObtenerSEDInterno ?" , CodSubestacion)
@@ -33,7 +39,27 @@ def ExportarReportePresentacionSeal():
         path = request.form.get('path')
         rows = cursor.fetchone()
 
-        Path, Name_File = GenerarReporte(str(rows[0]), pathSave, path)
+        print(NroOrden)
+
+        Path, Name_File = GenerarReporte(str(rows[0]), pathSave, path,NroOrden)
+
+        return send_file(Path, as_attachment=True, download_name=Name_File)
+
+    #finally:
+        cursor.close()
+        #cnxn.close()
+        
+
+@app.route('/ExportarReporteValorizacion', methods=['GET'])
+def ExportarReporteValorizacion():
+
+    #try:
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
+        CodSed = request.args.get('sedCodigo') 
+ 
+        Path, Name_File = GenerarReporteValorizacion(CodSed)
 
         return send_file(Path, as_attachment=True, download_name=Name_File)
 
@@ -273,7 +299,7 @@ def historialinspecciones():
 
         # ----------- CONSULTA 1 -------------------
         query = """
-        select 
+        select top 10
             d.DEFI_Interno,
             case
                 when d.TIPI_Interno <> 0 then 'Deficiencia'
@@ -718,12 +744,41 @@ def listardeficienciasxelemento():
 
         idelemento = request.args.get('idelemento')
         tipoelemento = request.args.get('tipoelemento')
+        
+        queryBuscarElemento = """
+            SELECT 
+                d.DEFI_Estado,
+                d.DEFI_FecRegistro,
+                d.DEFI_EstadoCriticidad,
+                d.DEFI_Comentario,
+                d.DEFI_DistHorizontal,
+                d.DEFI_DistVertical,
+                d.DEFI_TipoRetenida,
+                d.DEFI_RetenidaMaterial,
+                d.DEFI_TipoArmado,
+                d.DEFI_ArmadoMaterial,
+                c.CODI_Codigo,
+                u.USUA_Nombres as UsuarioInic,
+                us.USUA_Nombres as UsuarioMod
+            FROM Deficiencias d
+            INNER JOIN Tipificaciones t 
+                ON t.TIPI_Interno = d.TIPI_Interno
+            INNER JOIN Codigos c 
+                ON c.CODI_Interno = t.CODI_Interno
+            INNER JOIN Usuarios u
+                ON d.DEFI_UsuarioInic = u.USUA_Interno
+            INNER JOIN Usuarios us
+                ON d.DEFI_UsuarioMod = us.USUA_Interno
+            WHERE d.DEFI_TipoElemento = ?
+              AND d.DEFI_IdElemento = ? and 
+              d.DEFI_Activo = 1;
+        """
 
         if not idelemento:
             return jsonify({"error": "codIns es requerido"}), 400
 
         # ----------- CONSULTA 1 -------------------
-        cursor.execute("exec sp_GetDeficienciasPorElemento ? , ?", tipoelemento , idelemento)
+        cursor.execute(queryBuscarElemento, tipoelemento , idelemento)
         
         columns = [column[0] for column in cursor.description]
         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
@@ -754,7 +809,45 @@ def GetLatLongPost():
             return jsonify({"error": "sedCodigo es requerido"}), 400
 
         # ----------- CONSULTA 1 -------------------
-        cursor.execute("exec sp_GetListLatLongPOSTbySed ?", sed_codigo)
+        cursor.execute("""
+  SELECT
+        t.POST_Interno        AS Interno,
+        t.POST_Etiqueta       AS Etiqueta,
+        t.POST_CodigoNodo     AS Codigo,
+        t.POST_Latitud        AS Latitud,
+        t.POST_Longitud       AS Longitud,
+        t.POST_Terceros       AS Terceros,
+        t.POST_Inspeccionado  AS Inspeccinado,
+        t.TipoElemento,
+        tr.TRAM_Orden,
+        tr.TRAM_Codigo,
+        d.DEFI_Estado
+    FROM (
+        SELECT 
+        p.*, 
+        s.SED_Codigo , 
+        'POST' as TipoElemento
+        FROM Postes p
+        INNER JOIN Seds s 
+            ON s.SED_Interno = p.POST_Subestacion
+    ) AS t
+    left join (select * from Deficiencias where DEFI_Activo = 1) as d on d.DEFI_IdElemento = t.POST_Interno and t.TipoElemento = d.DEFI_TipoElemento
+    left join (select * from Tramos where TRAM_Activo = 1) tr on t.TRAM_Interno = tr.TRAM_Interno
+    WHERE t.SED_Codigo = ? and t.POST_Terceros = 0
+    group by 
+    t.POST_Interno,
+    t.POST_Etiqueta,
+    t.POST_CodigoNodo,
+    t.POST_Latitud,
+    t.POST_Longitud,
+    t.POST_Terceros,
+    t.POST_Inspeccionado,
+    t.TipoElemento,
+    tr.TRAM_Orden,
+    tr.TRAM_Codigo,
+    t.TRAM_Interno,
+    d.DEFI_Estado
+ """, sed_codigo)
         
         columns = [column[0] for column in cursor.description]
         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
@@ -783,7 +876,47 @@ def GetLatLongVanos():
             return jsonify({"error": "sedCodigo es requerido"}), 400
 
         # ----------- CONSULTA 1 -------------------
-        cursor.execute("exec sp_GetListLatLongVANOSbySed ?", sed_codigo)
+        cursor.execute("""
+ select 
+t.VANO_Interno as Interno,
+t.VANO_Etiqueta as Etiqueta,
+t.VANO_Codigo as Codigo,
+t.VANO_LatitudIni,
+t.VANO_LongitudIni,
+t.VANO_LatitudFin,
+t.VANO_LongitudFin,
+t.VANO_Terceros as Terceros,
+t.VANO_Inspeccionado as Inspeccinado, 
+t.TipoElemento,
+tr.TRAM_Orden,
+tr.TRAM_Codigo,
+d.DEFI_Estado
+from (
+select 
+V.* , 
+s.SED_Codigo,
+'VANO' as TipoElemento
+from Vanos V
+inner join Seds s on s.SED_Interno = V.VANO_Subestacion
+) as t
+left join (select * from Deficiencias where DEFI_Activo = 1) as d on d.DEFI_IdElemento = t.VANO_Interno and t.TipoElemento = d.DEFI_TipoElemento
+left join (select * from Tramos where TRAM_Activo = 1) tr on tr.TRAM_Interno = t.TRAM_Interno
+where t.SED_Codigo = ? and t.VANO_Terceros = 0
+group by 
+t.VANO_Interno,
+t.VANO_Etiqueta,
+t.VANO_Codigo,
+t.VANO_LatitudIni,
+t.VANO_LongitudIni,
+t.VANO_LatitudFin,
+t.VANO_LongitudFin,
+t.VANO_Terceros,
+t.VANO_Inspeccionado, 
+t.TipoElemento,
+tr.TRAM_Orden,
+tr.TRAM_Codigo,
+d.DEFI_Estado
+""", sed_codigo)
         
         columns = [column[0] for column in cursor.description]
         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
@@ -829,6 +962,66 @@ def reporteinspectores():
     #finally:
         #cursor.close()
         #cnxn.close()
+        
+        
+@app.route('/validecarpetas', methods=['POST'])
+def validecarpetas():  
+    try:
+
+        SEDCodigo = request.args.get('SEDCodigo')
+        #Path = request.args.get('Path')
+        data = request.get_json()
+        Path = data.get("Path")
+        print(Path)
+        #BASE_ruta = r'D:\Fotos-Reportes/'
+        #BASE_Ruta_Compartida = '\\\\192.168.1.52\\h\\SubestacionesParaPresentarMejia\\Corregido\\Corregido/'
+
+        rows = validefileonlyfilecorrectedJson.verificar_rutas(SEDCodigo,Path)
+
+        return jsonify({
+            "data": rows
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    #finally:
+        #cursor.close()
+        #cnxn.close()
+        
+@app.route('/movercarpetas', methods=['POST'])
+def movercarpetas():  
+    try:
+
+        SEDCodigo = request.args.get('SEDCodigo')
+        #Path = request.args.get('Path')
+        data = request.get_json()
+        Path = data.get("Path")
+        print(Path)
+
+        rows = movefilesCorregidoEP.copiar_carpetas_por_codigos([SEDCodigo],Path)
+
+        return jsonify({
+            "data": rows
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    #finally:
+        #cursor.close()
+        #cnxn.close()      
+        
+
+@app.route('/simple-endpoint', methods=['GET'])
+def simple_endpoint(): 
+    SEDCodigo = request.args.get('SEDCodigo')
+    rows = validefileonlyfilecorrectedJson.verificar_rutas(SEDCodigo)
+
+    return jsonify({
+            "data": rows
+    })
+
     
 @app.route("/insertposte", methods=["POST"])
 def insertar_poste():
@@ -889,9 +1082,27 @@ def insertar_poste():
         #cursor.close()
         #cnxn.close()
 
+BASE_PATH = r"\\192.168.1.52\h\fotos"
+
+@app.route("/imagenes/<path:nombre_archivo>")
+def listar_imagenes():
+    if not BASE_PATH.exists():
+        return jsonify({"error": "Ruta no existe"}), 404
+
+    extensiones_validas = {".jpg", ".jpeg", ".png", ".webp"}
+
+    imagenes = [
+        archivo.name
+        for archivo in BASE_PATH.iterdir()
+        if archivo.suffix.lower() in extensiones_validas
+    ]
+
+    return jsonify(imagenes)
+
 app.register_blueprint(reportes_bp) 
 app.register_blueprint(filtros_bp) 
 app.register_blueprint(rama_bp)
+app.register_blueprint(carpetas_bp)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')

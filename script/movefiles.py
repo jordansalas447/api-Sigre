@@ -85,7 +85,7 @@ from
     inner join Seds s on s.SED_Interno = el.Subestacion
     left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
     left join Codigos c on c.CODI_Interno = t.CODI_Interno
-    where s.SED_Codigo = '2095' and c.CODI_Codigo = '7004'
+    where s.SED_Codigo = ? and c.CODI_Codigo = '7004'
     GROUP BY el.Codigo,c.CODI_Codigo,d.DEFI_Interno,el.TipoElemento,el.Interno
     ) as cc on d.DEFI_Interno = cc.DEFI_Interno
     left join (   
@@ -130,13 +130,13 @@ from
     left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
     left join Codigos c on c.CODI_Interno = t.CODI_Interno
     left join Alimentadores a on a.ALIM_Interno = el.Alimentador
-    where ar.ARCH_Nombre like '%7004.1.'+d.DEFI_NumSuministro+'%' and s.SED_Codigo = '2095' and c.CODI_Codigo = '7004') as t
+    where ar.ARCH_Nombre like '%7004.1.'+d.DEFI_NumSuministro+'%' and s.SED_Codigo = ? and c.CODI_Codigo = '7004') as t
     ) as t2 on t2.DEFI_Interno = d.DEFI_Interno
-    where s.SED_Codigo = '2095'
+    where s.SED_Codigo = ?
     ) as t order by t.CODI_Codigo
 """
 
-CodIns = '2095'
+CodIns = '1459'
 
 cursor.execute(query,CodIns,CodIns,CodIns) 
 row = cursor.fetchone() 
@@ -158,9 +158,9 @@ def mover_estructura_de_carpetas(PATH_origen, PATH_destino):
             shutil.move(origen, PATH_destino)
         
         #shutil.move(origen, destino)
-        print(f"movido")
+        #print(f"✅ Movido")
     except Exception as e:
-        print(f"Ocurrió un error al mover la estructura de carpetas: {e}")
+        print(f"❌Error al mover carpeta: {e}")
 
 # Ejemplo de uso
 

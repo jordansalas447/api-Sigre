@@ -17,10 +17,12 @@ from SigreApiRest.utils import copiar_formato, Unirceldas, ConvertirNoneto0 , co
 #cnxn = Config.cnxn
 #cursor = cnxn.cursor()
 
-def GenerarReporte(CodAlim,PathSave,BASEPATH):
+def GenerarReporte(CodAlim,PathSave,BASEPATH,NroOrden=""):
 
     cnxn = get_connection()
     cursor = cnxn.cursor()
+    
+    print(NroOrden)
     
     ruta_del_archivo_existente = r'C:\Users\Usuario\Documents\SigreWeb\sigreweb-main\SigreApiRest\Reporte\ReportesSigre.xlsx'
     #POSTES
@@ -56,7 +58,7 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
         "Espacio05":"",
         #"TIPI1082": [],
         #"TIPI1086": [],
-        "Criticidad": [],
+        "Circuito": [],
         "Fotos":[],
         "Ruta": [],
         "Espacio06":"",
@@ -67,6 +69,7 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
         #"S2": [],
         "N": [],
         "Total": [],
+        "Criticidad": []
     }
 
     # Iterate through records
@@ -86,14 +89,15 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
         data_lists["TIPI6028"].append(str(rows[13]).replace('None',''))
         #data_lists["TIPI1082"].append(str(rows[15]).replace('None',''))
         #data_lists["TIPI1086"].append(str(rows[16]).replace('None',''))
-        data_lists["Criticidad"].append(str(rows[14]).replace('None',''))
+        data_lists["Circuito"].append(str(rows[21]).replace('None',''))
         data_lists['Fotos'].append(str(rows[20]).replace('None',''))
         data_lists["Ruta"].append('=HYPERLINK("'+BASEPATH+  str(rows[15]).replace('None','') + '","Ver Fotos")')
         #data_lists["S0"].append(int(ConvertirNoneto0(rows[16])))
         #data_lists["S1"].append(int(ConvertirNoneto0(rows[17])))
         #data_lists["S2"].append(int(ConvertirNoneto0(rows[18])))
-        data_lists["N"].append(int(ConvertirNoneto0(rows[19])))
+        data_lists["N"].append(str(rows[19]).replace('None',''))
         data_lists["Total"].append(ConvertirNoneto0(rows[16]) + ConvertirNoneto0(rows[17]) + ConvertirNoneto0(rows[18]) + ConvertirNoneto0(rows[19]))
+        data_lists["Criticidad"].append(str(rows[14]).replace('None','')) 
         
         Alimentador.append(str(rows[0]))
         Fecha.append(str(rows[1]))
@@ -117,6 +121,7 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
     hoja['N4'] = 'ARJEN SRL'
     hoja['N5'] = Alimentador[0]
     hoja['N6'] = Fecha[0]
+    hoja['N7'] = NroOrden
     rango_origen_CuadroSumTotal = hoja["B8:I23"] 
     rango_origenColumnas = hoja["M8:M37"]
 
@@ -223,7 +228,6 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
     Fotos = []
     Criticidad = []
     Ruta = []
-    
 
     #S0 = []
     #S1 = []
@@ -251,13 +255,13 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
             #S0.append(int(ConvertirNoneto0(rows[11])))
             #S1.append(int(ConvertirNoneto0(rows[12])))
             #S2.append(int(ConvertirNoneto0(rows[13])))
-            N.append(int(ConvertirNoneto0(rows[14])))
+            N.append(str(rows[14]).replace('None',''))
 
             Total.append(ConvertirNoneto0(rows[11]) + ConvertirNoneto0(rows[12])+ ConvertirNoneto0(rows[13])+ ConvertirNoneto0(rows[14]))          
-            #Tram.append(str(rows[15]))
+            Tram.append(str(rows[16]).replace('None',''))
 
 
-    results.append(Tram)
+    results.append(Criticidad)
     results.append(NodoInicial)
     results.append(NodoFinal)
     results.append(VANO_Codigo)
@@ -268,7 +272,7 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
     #results.append(TIPI5030)
     #results.append(TIPI5032)
     #results.append(TIPI5038)
-    results.append(Criticidad)
+    results.append(Tram)
     results.append(Fotos)
     results.append(Ruta)
     results.append([''])
@@ -294,6 +298,7 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
     hoja['N4'] = 'ARJEN SRL'
     hoja['N5'] = Alimentador[0]
     hoja['N6'] = Fecha[0]
+    hoja['N7'] = NroOrden
     rango_origen_CuadroSumTotal = hoja["B6:I19"] 
     rango_origenColumnas = hoja["M8:M37"]
 
@@ -320,8 +325,6 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
     )
     celda.border = thick_black
 
-
-
     # Definir el rango que quieres copiar
 
     copiar(hoja,rango_origen_CuadroSumTotal,0,len(results[2]) + 13)
@@ -329,7 +332,6 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
     cursor.execute("sp_GetCountDefVBTByFeeder " + CodAlim)
     records = cursor.fetchall()
     results3 = []
-
 
     TotalS0=0
     TotalS1=0
@@ -368,7 +370,6 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH):
     results3.append(data) 
 
     DFVAnosCuadroTotal = pd.DataFrame(results3)
-
 
     # Cuadro final de suma
     for row_idx, row_data in DFVAnosCuadroTotal.iterrows():

@@ -1,7 +1,8 @@
+import json
 from pathlib import Path
 import pyodbc
 
-CONNECTION_STRING3 = (
+CONNECTION_STRING = (
    r"Driver={ODBC Driver 18 for SQL Server};"
      r"Server=serversigre.database.windows.net,1433;"
      r"Database=sigre;"
@@ -21,7 +22,7 @@ CONNECTION_STRING2 = (
    r"TrustServerCertificate=yes;"
 )
 
-cnxn = pyodbc.connect(CONNECTION_STRING3)
+cnxn = pyodbc.connect(CONNECTION_STRING)
 cursor = cnxn.cursor()
 
 query = """
@@ -128,58 +129,61 @@ where t.DEFI_Activo = 1
         """
 
 
-CodIns = '1729'
+def verificar_rutas(CodIns,PathValide):
+    try:
+        cursor.execute(query, CodIns, CodIns)
+        filas = cursor.fetchall()
+        rutas = [PathValide + fila[0] for fila in filas]
+        Comentarios = [fila[1] for fila in filas]
+        #cnxn.close()
 
-cursor.execute(query,CodIns,CodIns)
+        contador = 0
+        total = len(rutas)
 
-BASE_ruta = r'D:\Fotos-Reportes/'
+        existe_con_foto = 0
+        existe_sin_foto = 0
+        no_existe = 0
+        resultados = []
 
-BASE_Ruta_Compartida = r'\\192.168.1.52\h\Revision\Arequipa/Fotos-Reportes/'
+        for ruta in rutas:
+            contador += 1
+            if ruta and Path(ruta).exists():
+                carpeta = Path(ruta)
+                jpgs = list(carpeta.glob("*.jpg")) + list(carpeta.glob("*.jpeg"))
+                if not jpgs:
+                    existe_sin_foto += 1
+                    resultado = {
+                        "ruta": ruta,
+                        "estado": "existe_sin_foto",
+                        "mensaje": f"{ruta} existe pero no tiene archivos JPG",
+                        "Comentario": Comentarios[contador-1]
+                    }
+                    resultados.append(resultado)
+                elif len(jpgs) < 4:
+                    existe_con_foto += 1
+                    resultado = {
+                        "ruta": ruta,
+                        "estado": "existe_con_foto",
+                        "mensaje": f"{ruta} existe y tiene {len(jpgs)} archivos JPG - menos de 4 archivos JPG",
+                        "Comentario": Comentarios[contador-1]
+                    }
+                    resultados.append(resultado)
+                # Si hay 4 o más fotos, no se agrega al array
+            else:
+                no_existe += 1
+                resultado = {
+                    "ruta": ruta,
+                    "estado": "no_existe",
+                    "mensaje": f"No existe: {ruta}",
+                    "Comentario": Comentarios[contador-1]
+                }
+                resultados.append(resultado)
+    except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
 
-#BASE_ruta1 = r'D:\compartir\Fotos-Reportes/'
-
-filas = cursor.fetchall()
-rutas = [BASE_Ruta_Compartida + fila[0] for fila in filas]
-Comentarios = [fila[1] for fila in filas]
-
-cnxn.close()
-
-# for ruta in rutas:
-#     if ruta and Path(ruta).exists():
-#         ""
-#     else:
-#         print(f"❌ No existe: {ruta}")
-
-
-contador = 0
-total = len(rutas)
-
-existe_con_foto = 0
-existe_sin_foto = 0
-no_existe = 0
-
-for ruta in rutas:
-    contador += 1
-    if ruta and Path(ruta).exists():
-        carpeta = Path(ruta)
-
-        jpgs = list(carpeta.glob("*.jpg")) + list(carpeta.glob("*.jpeg"))
-
-        if jpgs:
-            existe_con_foto += 1
-            #print(f"✅ [{contador}/{total}] {ruta} existe y tiene {len(jpgs)} archivos JPG")
-            if (len(jpgs) < 4):
-                print(f"⚠️ [{contador}/{total}] {ruta} tiene menos de 4 archivos JPG")
-        else:   
-            existe_sin_foto += 1
-            print(f"⚠️ [{contador}/{total}] {ruta} existe pero no tiene archivos JPG")
-    else:
-        no_existe += 1
-        print(f"❌ [{contador}/{total}] No existe: {ruta}")
-
-
-
-print(f"\nEvaluación completada. Total procesados: {total}")
-print(f"✅ Existe y tiene fotos: {existe_con_foto}")
-print(f"⚠️ Existe pero no tiene fotos: {existe_sin_foto}")
-print(f"❌ No existe: {no_existe}")
+    # Convertir resultados a JSON
+    #print(resultados_json)
+    return resultados

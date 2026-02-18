@@ -1,30 +1,4 @@
-from pathlib import Path
-import pyodbc
-
-CONNECTION_STRING3 = (
-   r"Driver={ODBC Driver 18 for SQL Server};"
-     r"Server=serversigre.database.windows.net,1433;"
-     r"Database=sigre;"
-     r"UID=usersigre;"
-     r"PWD=Sigrebt#2025;"
-     r"Encrypt=yes;"
-     r"TrustServerCertificate=no;"
-     r"Connection Timeout=30"
-     r"MARS_Connection=Yes;"
-)
-
-CONNECTION_STRING2 = (
-   r"Driver={ODBC Driver 18 for SQL Server};"
-   r"Server=.\SQLEXPRESS;"
-   r"Database=Sigre;"
-   r"Trusted_Connection=yes;"
-   r"TrustServerCertificate=yes;"
-)
-
-cnxn = pyodbc.connect(CONNECTION_STRING3)
-cursor = cnxn.cursor()
-
-query = """
+queryValidarCarpetas = """
 SELECT distinct
 CASE 
     WHEN t.CODI_Codigo = '7004' THEN replace(t.Ruta,'/7004/',concat('/7004/',convert(nvarchar,t.Contador),'/'))
@@ -125,61 +99,43 @@ from (
       where s.SED_Codigo = ?) as t
 ) t
 where t.DEFI_Activo = 1
-        """
+"""
 
 
-CodIns = '1729'
-
-cursor.execute(query,CodIns,CodIns)
-
-BASE_ruta = r'D:\Fotos-Reportes/'
-
-BASE_Ruta_Compartida = r'\\192.168.1.52\h\Revision\Arequipa/Fotos-Reportes/'
-
-#BASE_ruta1 = r'D:\compartir\Fotos-Reportes/'
-
-filas = cursor.fetchall()
-rutas = [BASE_Ruta_Compartida + fila[0] for fila in filas]
-Comentarios = [fila[1] for fila in filas]
-
-cnxn.close()
-
-# for ruta in rutas:
-#     if ruta and Path(ruta).exists():
-#         ""
-#     else:
-#         print(f"❌ No existe: {ruta}")
-
-
-contador = 0
-total = len(rutas)
-
-existe_con_foto = 0
-existe_sin_foto = 0
-no_existe = 0
-
-for ruta in rutas:
-    contador += 1
-    if ruta and Path(ruta).exists():
-        carpeta = Path(ruta)
-
-        jpgs = list(carpeta.glob("*.jpg")) + list(carpeta.glob("*.jpeg"))
-
-        if jpgs:
-            existe_con_foto += 1
-            #print(f"✅ [{contador}/{total}] {ruta} existe y tiene {len(jpgs)} archivos JPG")
-            if (len(jpgs) < 4):
-                print(f"⚠️ [{contador}/{total}] {ruta} tiene menos de 4 archivos JPG")
-        else:   
-            existe_sin_foto += 1
-            print(f"⚠️ [{contador}/{total}] {ruta} existe pero no tiene archivos JPG")
-    else:
-        no_existe += 1
-        print(f"❌ [{contador}/{total}] No existe: {ruta}")
-
-
-
-print(f"\nEvaluación completada. Total procesados: {total}")
-print(f"✅ Existe y tiene fotos: {existe_con_foto}")
-print(f"⚠️ Existe pero no tiene fotos: {existe_sin_foto}")
-print(f"❌ No existe: {no_existe}")
+queryCorregirCarpetas = """
+    select 
+    CONCAT(a.ALIM_Etiqueta,'/',s.SED_Codigo,'/',
+    CASE 
+    WHEN el.TipoElemento = 'POST' 
+    THEN 'Poste'  
+    ELSE 'Vano'
+    END,
+    '/',el.Codigo,'/',iif(c.CODI_Codigo is null,'SINDEF',c.CODI_Codigo),'/') as Corregido
+    from (   
+   -- POSTES
+    SELECT  
+        p.POST_Interno        AS Interno,
+        p.POST_CodigoNodo     AS Codigo,
+        p.POST_Etiqueta AS Etiqueta,
+        p.ALIM_Interno AS Alimentador,
+        p.POST_Subestacion AS Subestacion,
+        'POST' as TipoElemento
+    FROM  Postes p where POST_EsBT = 1 and p.POST_Terceros = 0
+    UNION ALL
+    -- VANOS
+    SELECT  
+        v.VANO_Interno        AS Interno,
+        v.VANO_Codigo         AS Codigo,
+        v.VANO_Etiqueta AS Etiqueta,
+        v.ALIM_Interno AS Alimentador,
+        v.VANO_Subestacion AS Subestacion,
+        'VANO' as TipoElemento
+    FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0) as el 
+    left join (select * from Deficiencias where DEFI_Activo = 1 ) d on el.TipoElemento = d.DEFI_TipoElemento and el.Interno = d.DEFI_IdElemento
+    inner join Alimentadores a on a.ALIM_Interno = el.Alimentador  
+    inner join Seds s on s.SED_Interno = el.Subestacion
+    left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
+    left join Codigos c on c.CODI_Interno = t.CODI_Interno
+    where s.SED_Codigo = ?
+    order by el.Codigo
+"""

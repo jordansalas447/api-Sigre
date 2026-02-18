@@ -207,3 +207,14 @@ CROSS APPLY (
 where t.SED_Codigo = ?
 ) as t2 on t.Codigo = t2.Codigo and t.ARCH_CodTabla <> t2.ARCH_CodTabla and t.value = t2.value;
 """
+
+
+queryNodoIF = """
+select V.VANO_Codigo,V.VANO_NodoInicial,V.VANO_NodoFinal,S.SED_Codigo from Vanos V
+inner join Seds S on V.VANO_Subestacion = S.SED_Interno
+where 
+(VANO_NodoInicial is null or VANO_NodoFinal is null) and 
+VANO_EsBT  = 1 and
+VANO_Terceros = 0 and
+s.SED_Codigo = ?
+"""

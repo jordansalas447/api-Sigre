@@ -25,6 +25,8 @@ END
 ,
 t.Tipificacion) as 'CodigoTipificaciondeladeficiencia',
 t.Observacion as 'Descripciondeladeficiencia',
+t.Criticidad as 'Gravedaddeladeficiencia',
+iif(t.CODI_ComentarioEstandar = 'Tercero','TERCERO','SEAL') as 'Responsabilidadgeneracióndeficiencia',
 convert(date,t.DEFI_FecRegistro) as 'FechadeIdentificacion',
 t.Corregido as 'HipervinculodeRegistroFotografico'
 from (
@@ -39,6 +41,7 @@ CASE
     ELSE CONVERT(nvarchar,t.DEFI_EstadoCriticidad)
 END as Criticidad,
 iif(t.CODI_Codigo is null,'S/D',t.CODI_Codigo) as Tipificacion,
+t.CODI_ComentarioEstandar,
 t.ALIM_Etiqueta ,
 t.NodoInicial,
 t.NodoFinal,
@@ -50,12 +53,7 @@ t.DEFI_FecRegistro,
 iif(t.DEFI_Observacion is null, '',t.DEFI_Observacion) as Observacion,
 iif(t.DEFI_Comentario is null, '',t.DEFI_Comentario) as Comentario,
 t.USUA_Nombres,
-case
-       WHEN t.CODI_Codigo = '7004' THEN replace(t.Ruta,'/7004/',concat('/7004/',convert(nvarchar,t.Contador),'/'))
-      ELSE t.Ruta--,
-end as Corregido
---   seg.value AS segmento_6,
- --   t.ARCH_Nombre
+t.Ruta as Corregido
 FROM (
 select * from (
 select distinct
@@ -66,6 +64,7 @@ el.NodoInicial,
 el.NodoFinal,
 d.DEFI_EstadoCriticidad,
 c.CODI_Codigo,
+c.CODI_ComentarioEstandar,
 a.ALIM_Etiqueta ,
 s.SED_Codigo,
 d.DEFI_NumSuministro ,
@@ -89,14 +88,10 @@ END,
 el.Codigo,
 '/',
 iif(c.CODI_Codigo is null,'SINDEF',c.CODI_Codigo),
-'/'
---t1.Contador,
---iif(t1.Contador is null,'', '/'),
---RIGHT(ar.ARCH_Nombre, CHARINDEX('/', REVERSE(ar.ARCH_Nombre)) - 1)
+'/',
+t1.Contador
 ) as Ruta,
-t1.Contador,
-RIGHT(ar.ARCH_Nombre, CHARINDEX('/', REVERSE(ar.ARCH_Nombre)) - 1) AS NombreArchivo,
-ar.ARCH_Nombre
+t1.Contador
 from (   
    -- POSTES
     SELECT  
@@ -122,12 +117,12 @@ from (
         'VANO' as TipoElemento
     FROM  Vanos v where v.VANO_EsBT = 1 ) as el
     inner join Seds s on el.Subestacion = s.SED_Interno
-    left join Deficiencias d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
+    left join (select * from Deficiencias where DEFI_Activo = 1 and TIPI_Interno <> 0) d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
     left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
     left join Codigos c on c.CODI_Interno = t.CODI_Interno
     left join Alimentadores a on a.ALIM_Interno = el.Alimentador
     left join Usuarios u on u.USUA_Interno = d.DEFI_UsuarioMod
-    left join Archivos ar on ar.ARCH_CodTabla = d.DEFI_Interno
+    left join Archivos ar on ar.ARCH_IdElemento = el.Interno and ar.ARCH_TipoElemento = el.TipoElemento
     left join
     (
     select 
@@ -156,7 +151,7 @@ from (
         'VANO' as TipoElemento
     FROM  Vanos v where v.VANO_EsBT = 1
     ) as el 
-    left join  Deficiencias d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
+    left join (select * from Deficiencias where DEFI_Activo = 1 and TIPI_Interno <> 0) d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
     inner join Seds s on s.SED_Interno = el.Subestacion
     left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
     left join Codigos c on c.CODI_Interno = t.CODI_Interno
@@ -164,17 +159,78 @@ from (
     GROUP BY el.Codigo,c.CODI_Codigo,d.DEFI_Interno
      ) as t1 on t1.DEFI_Interno = d.DEFI_Interno
       where s.SED_Codigo = ? and d.DEFI_Activo = 1) as t
-      where t.NombreArchivo not like '%.m4a' and t.DEFI_EstadoCriticidad in (3,2)
 ) t
-CROSS APPLY (
-    SELECT value
-    FROM (
-        SELECT value,
-               ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS pos
-        FROM STRING_SPLIT(t.ARCH_Nombre, '/')
-    ) x
-    WHERE x.pos = 6
-) seg
-WHERE t.NombreArchivo NOT LIKE '%.m4a') as t
-where t.Tipificacion <> 'S/D'
+) as t
+"""
+
+
+
+queryValorizacion = """
+DECLARE @TipoElemento VARCHAR(10);
+DECLARE @SED VARCHAR(10);
+Set @SED = ?;
+Set @TipoElemento = ?;
+
+select distinct * from (
+select 
+max(convert(date,d.DEFI_FecRegistro)) as Fecha,
+a.ALIM_Etiqueta as Alimentador,
+el.NodoInicial,
+el.NodoFinal,
+el.Etiqueta,
+el.Codigo,
+iif(el.TipoElemento = 'POST',iif(c.CODI_Codigo is null,'0','1'),'') as 'BT-109',
+iif(el.TipoElemento = 'VANO' ,iif(c.CODI_Codigo is null,'0','1'),'') as 'BT-110',
+iif(el.TipoElemento = 'POST',iif(c.CODI_Codigo is null,'1','0'),'') as 'BT-111',
+iif(el.TipoElemento = 'VANO' ,iif(c.CODI_Codigo is null,'1','0'),'') as 'BT-112',
+IIF(el.TipoElemento = 'POST','EBT',el.TipoElemento) as TipoElemento,
+iif(el.TipoElemento = 'VANO',CONCAT(el.NodoInicial,'-',el.NodoFinal),el.Etiqueta) as CodigoNodo
+from (select * from Deficiencias where DEFI_Activo = 1) d 
+inner join (
+   -- POSTES
+    SELECT  
+        p.POST_Interno        AS Interno,
+        p.POST_CodigoNodo     AS Codigo,
+        '' as NodoInicial,
+        '' as NodoFinal,
+        p.POST_Etiqueta AS Etiqueta,
+        p.ALIM_Interno AS Alimentador,
+        p.POST_Subestacion AS Subestacion,
+        'POST' as TipoElemento
+    FROM  Postes p where POST_EsBT = 1 and p.POST_Terceros = 0
+    UNION ALL
+    -- VANOS
+    SELECT  
+        v.VANO_Interno        AS Interno,
+        v.VANO_Codigo         AS Codigo,
+        v.VANO_NodoInicial as NodoInicial,
+        v.VANO_NodoFinal as NodoFinal,
+        v.VANO_Etiqueta AS Etiqueta,
+        v.ALIM_Interno AS Alimentador,
+        v.VANO_Subestacion AS Subestacion,
+        'VANO' as TipoElemento
+    FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0
+) as el on el.TipoElemento = d.DEFI_TipoElemento and el.Interno = d.DEFI_IdElemento
+inner join Seds s on s.SED_Interno = el.Subestacion
+left join Alimentadores a on a.ALIM_Interno = el.Alimentador
+left join Tipificaciones t on d.TIPI_Interno = t.TIPI_Interno
+left join Codigos c on t.CODI_Interno = c.CODI_Interno
+where s.SED_Codigo = @SED and el.TipoElemento =     
+CASE 
+          WHEN @TipoElemento = 'AMBOS' THEN el.TipoElemento
+          ELSE @TipoElemento
+END
+group by 
+a.ALIM_Etiqueta,
+el.NodoInicial,
+el.NodoFinal,
+el.Etiqueta,
+el.Codigo,
+iif(el.TipoElemento = 'POST',iif(c.CODI_Codigo is null,'0','1'),''),
+iif(el.TipoElemento = 'POST',iif(c.CODI_Codigo is null,'1','0'),''),
+iif(el.TipoElemento = 'VANO' ,iif(c.CODI_Codigo is null,'0','1'),''),
+iif(el.TipoElemento = 'VANO' ,iif(c.CODI_Codigo is null,'1','0'),''),
+el.TipoElemento
+) as t
+order by t.Codigo
 """

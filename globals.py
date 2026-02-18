@@ -217,12 +217,14 @@ iif( t.Criticidad is null ,convert(nvarchar,el.DEFI_EstadoCriticidad),t.Criticid
 iif(t.Tipificacion is null,convert(nvarchar,el.CODI_Codigo),t.Tipificacion) as Tipificacion,
 iif(t.ALIM_Etiqueta is null,el.DEFI_CodAMT,t.ALIM_Etiqueta) as Alimentador,
 t.SED_Codigo,
+iif(el.DEFI_Col2 = 'Terceros',1,0) as Responsable,
 iif(t.NumSuministro is null,el.DEFI_NumSuministro,t.NumSuministro) as NumSuministro ,
 iif(t.DEFI_DistHorizontal is null,el.DEFI_DistHorizontal,t.DEFI_DistHorizontal) as DistanciaHorizontal,
 iif(t.DEFI_DistVertical is null,el.DEFI_DistVertical,t.DEFI_DistVertical) as DEFI_DistVertical,
-iif(t.DEFI_FecRegistro is null,el.DEFI_FecRegistro,t.DEFI_FecRegistro) as FechaRegistro,
+iif(t.DEFI_FecRegistro is null,convert(date,el.DEFI_FecRegistro),convert(date,t.DEFI_FecRegistro)) as FechaRegistro,
 iif(t.Observacion is null,el.DEFI_Observacion,t.Observacion) as Observacion,
 iif(t.Comentario is null,el.DEFI_Comentario,t.Comentario) as Comentario,
+iif(t.CODI_ComentarioEstandar is null,el.CODI_ComentarioEstandar,t.CODI_ComentarioEstandar) as ComentarioStd,
 iif(t.USUA_Nombres is null, el.USUA_Nombres,t.USUA_Nombres) as Inspector,
 iif(t.Corregido is null,el.Ruta,t.Corregido) as Corregido
 from (
@@ -231,6 +233,7 @@ el.*,
 u.*,
 d.*,
 c.CODI_Codigo,
+c.CODI_ComentarioEstandar,
 CONCAT(
 --'D:/Fotos-Reportes/',
 a.ALIM_Etiqueta,
@@ -300,6 +303,7 @@ t.DEFI_DistVertical,
 t.DEFI_FecRegistro,
 iif(t.DEFI_Observacion is null, '',t.DEFI_Observacion) as Observacion,
 iif(t.DEFI_Comentario is null, '',t.DEFI_Comentario) as Comentario,
+t.CODI_ComentarioEstandar,
 t.USUA_Nombres,
 t.Ruta as Corregido
 FROM (
@@ -311,7 +315,8 @@ el.TipoElemento,
 d.DEFI_Interno,
 d.DEFI_EstadoCriticidad,
 c.CODI_Codigo,
-a.ALIM_Etiqueta ,
+c.CODI_ComentarioEstandar,
+a.ALIM_Etiqueta,
 s.SED_Codigo,
 d.DEFI_NumSuministro ,
 d.DEFI_DistHorizontal,
@@ -391,7 +396,7 @@ from (
         'VANO' as TipoElemento
     FROM  Vanos v where v.VANO_EsBT = 1
     ) as el 
-    left join  Deficiencias d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
+    left join (select * from Deficiencias where DEFI_Activo = 1 ) d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
     inner join Seds s on s.SED_Interno = el.Subestacion
     left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
     left join Codigos c on c.CODI_Interno = t.CODI_Interno
@@ -444,6 +449,7 @@ where s.SED_Codigo = ? and el.TipoElemento = ?
 ) as t
 order by t.TipoElemento,t.Deficiencia
 """
+
 
 TotalDeficienciasxElemento = """
 select t.Total,t.Deficiencia,t.TipoElemento from (
