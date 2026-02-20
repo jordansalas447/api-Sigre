@@ -25,6 +25,7 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH,NroOrden="",SedCode=""):
     
     print(NroOrden)
     
+    PathSave = os.path.join(os.path.sep)
 
     ruta_del_archivo_existente = os.path.join(BASE_DIR, "Reporte", "ReportesSigre.xlsx")
     #POSTES
