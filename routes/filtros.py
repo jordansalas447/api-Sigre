@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from app.filtros.queryfiltros import queryElemetosDuplicadosxSed, querySindeffyDeffxSed, queryfiltroArchivosDuplicados , queryNodoIF
+from app.filtros.queryfiltros import queryElemetosDuplicadosxSed, querySindeffyDeffxSed, queryfiltroArchivosDuplicados , queryNodoIF , queryFechas, queryNroSuministroErroneo
 from ..config import get_connection
 
 filtros_bp = Blueprint('filtros', __name__, url_prefix='/filtros')
@@ -108,6 +108,62 @@ def NodoIF():
 
         # ----------- CONSULTA 1 -------------------
         query = queryNodoIF
+        
+        cursor.execute(query, SEDCodigo)
+        
+        columns = [column[0] for column in cursor.description]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        return jsonify({
+            "data": rows
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  
+    
+
+@filtros_bp.route('/SaltoFechas', methods=['GET'])
+def SaltoFechas():
+    try:
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
+        SEDCodigo = request.args.get('SEDCodigo')
+
+        if not SEDCodigo:
+            return jsonify({"error": "SEDCodigo es requerido"}), 400
+
+        # ----------- CONSULTA 1 -------------------
+        query = queryFechas
+        
+        cursor.execute(query, SEDCodigo)
+        
+        columns = [column[0] for column in cursor.description]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        return jsonify({
+            "data": rows
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  
+
+
+@filtros_bp.route('/NroSuministroErroneo', methods=['GET'])
+def NroSuministroErroneo():  
+    try:
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
+        SEDCodigo = request.args.get('SEDCodigo')
+
+        if not SEDCodigo:
+            return jsonify({"error": "SEDCodigo es requerido"}), 400
+
+        # ----------- CONSULTA 1 -------------------
+        query = queryNroSuministroErroneo
         
         cursor.execute(query, SEDCodigo)
         

@@ -218,3 +218,74 @@ VANO_EsBT  = 1 and
 VANO_Terceros = 0 and
 s.SED_Codigo = ?
 """
+
+
+queryFechas = """
+select 
+count(t.FechaRegistro) as Total,
+t.FechaRegistro,
+t.SED_Codigo
+from (
+select 
+convert(date,d.DEFI_FecRegistro) as FechaRegistro,
+s.SED_Codigo 
+from (   
+   -- POSTES
+    SELECT  
+        p.POST_Interno        AS Interno,
+        p.POST_CodigoNodo     AS Codigo,
+        p.POST_Etiqueta AS Etiqueta,
+        p.ALIM_Interno AS Alimentador,
+        p.POST_Subestacion AS Subestacion,
+        p.POST_Terceros as Terceros,
+        'POST' as TipoElemento
+    FROM  Postes p where POST_EsBT = 1
+    UNION ALL
+    -- VANOS
+    SELECT  
+        v.VANO_Interno        AS Interno,
+        v.VANO_Codigo         AS Codigo,
+        v.VANO_Etiqueta AS Etiqueta,
+        v.ALIM_Interno AS Alimentador,
+        v.VANO_Subestacion AS Subestacion,
+        v.VANO_Terceros as Terceros,
+        'VANO' as TipoElemento
+    FROM  Vanos v where v.VANO_EsBT = 1 ) as el
+    inner join Seds s on el.Subestacion = s.SED_Interno
+    left join (select * from Deficiencias d where DEFI_Activo = 1) d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
+    left join Alimentadores a on a.ALIM_Interno = el.Alimentador
+    left join Usuarios u on u.USUA_Interno = d.DEFI_UsuarioMod
+	where el.Terceros = 0 and s.SED_Codigo = ?
+    ) as t
+    group by t.FechaRegistro, t.SED_Codigo 
+"""
+
+
+queryNroSuministroErroneo = """
+	select el.Codigo,d.DEFI_NumSuministro,d.DEFI_TipoElemento,s.SED_Codigo,d.TIPI_Interno from 
+	 (   
+   -- POSTES
+    SELECT  
+        p.POST_Interno        AS Interno,
+        p.POST_CodigoNodo     AS Codigo,
+        p.POST_Etiqueta AS Etiqueta,
+        p.ALIM_Interno AS Alimentador,
+        p.POST_Subestacion AS Subestacion,
+        p.POST_Terceros as Terceros,
+        'POST' as TipoElemento
+    FROM  Postes p where POST_EsBT = 1
+    UNION ALL
+    -- VANOS
+    SELECT  
+        v.VANO_Interno        AS Interno,
+        v.VANO_Codigo         AS Codigo,
+        v.VANO_Etiqueta AS Etiqueta,
+        v.ALIM_Interno AS Alimentador,
+        v.VANO_Subestacion AS Subestacion,
+        v.VANO_Terceros as Terceros,
+        'VANO' as TipoElemento
+    FROM  Vanos v where v.VANO_EsBT = 1 ) as el
+	inner join (select * from Deficiencias where DEFI_Activo = 1) d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
+	inner join seds s on s.SED_Interno = el.Subestacion
+	where d.TIPI_Interno > 0 and ( LEN(convert(varchar,d.DEFI_NumSuministro)) < 3 or LEN(convert(varchar,d.DEFI_NumSuministro)) > 7  ) and s.SED_Codigo = ?
+    """

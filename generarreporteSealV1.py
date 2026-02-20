@@ -13,21 +13,24 @@ import asyncio
 from flask import jsonify
 from app.config import get_connection
 from app.utils import copiar_formato, Unirceldas, ConvertirNoneto0 , copiar
-
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 #cnxn = Config.cnxn
 #cursor = cnxn.cursor()
 
-def GenerarReporte(CodAlim,PathSave,BASEPATH,NroOrden=""):
+def GenerarReporte(CodAlim,PathSave,BASEPATH,NroOrden="",SedCode=""):
 
     cnxn = get_connection()
     cursor = cnxn.cursor()
     
     print(NroOrden)
     
-    ruta_del_archivo_existente = r'C:\Users\Usuario\Documents\SigreWeb\sigreweb-main\app\Reporte\ReportesSigre.xlsx'
+
+    ruta_del_archivo_existente = os.path.join(BASE_DIR, "Reporte", "ReportesSigre.xlsx")
     #POSTES
     #cursor.execute("BEGIN TRANSACTION")  
     #cursor.execute("sp_UpdateCorregirRutas " + CodAlim)
+        
     cursor.execute("exec sp_GetReportPostsBTByFeeder " + CodAlim)
     records = cursor.fetchall()
     
@@ -119,12 +122,11 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH,NroOrden=""):
     # Puedes usar wb['Nombre_de_la_Hoja'] si no es la hoja activa
 
     hoja['N4'] = 'ARJEN SRL'
-    hoja['N5'] = Alimentador[0]
+    hoja['N5'] = Alimentador[0] + " / " + SedCode
     hoja['N6'] = Fecha[0]
     hoja['N7'] = NroOrden
     rango_origen_CuadroSumTotal = hoja["B8:I23"] 
     rango_origenColumnas = hoja["M8:M37"]
-
 
     for idx in range(1,len(results[2])):
         copiar_formato(hoja,rango_origenColumnas,0,idx)
@@ -296,7 +298,7 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH,NroOrden=""):
      # Puedes usar wb['Nombre_de_la_Hoja'] si no es la hoja activa
 
     hoja['N4'] = 'ARJEN SRL'
-    hoja['N5'] = Alimentador[0]
+    hoja['N5'] = Alimentador[0] + " / " + SedCode
     hoja['N6'] = Fecha[0]
     hoja['N7'] = NroOrden
     rango_origen_CuadroSumTotal = hoja["B6:I19"] 

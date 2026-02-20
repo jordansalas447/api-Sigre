@@ -14,14 +14,17 @@ from flask import jsonify
 from app.config import get_connection
 from app.utils import copiar_formato, Unirceldas, ConvertirNoneto0 , copiar
 from app.Reportes.queryreportes import queryValorizacion
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 #cnxn = Config.cnxn
 #cursor = cnxn.cursor()
 
-def GenerarReporteValorizacion(CodSed,PathSave="D://"):
+def GenerarReporteValorizacion(CodSed,NroOrden=""):
     cnxn = get_connection()
     cursor = cnxn.cursor()
-    
-    ruta_del_archivo_existente = r'C:\Users\Usuario\Documents\SigreWeb\sigreweb-main\app\Reporte\ReportesSigreValorizacion.xlsx'
+    PathSave="D://"
+
+    ruta_del_archivo_existente = os.path.join(BASE_DIR, "Reporte", "ReportesSigreValorizacion.xlsx")
     #POSTES
     cursor.execute(queryValorizacion, CodSed, 'POST')
     records = cursor.fetchall()
@@ -36,8 +39,8 @@ def GenerarReporteValorizacion(CodSed,PathSave="D://"):
     data_lists = {
         #"Fecha": [],
         #"Alimentador": [],
-        "NodoInicial": [],
-        "NodoFinal": [],
+        #"NodoInicial": [],
+        #"NodoFinal": [],
         "Etiqueta": [],
         "Codigo": [],
         "BT-109":[],
@@ -78,8 +81,9 @@ def GenerarReporteValorizacion(CodSed,PathSave="D://"):
     # Puedes usar wb['Nombre_de_la_Hoja'] si no es la hoja activa
 
     hoja['N4'] = 'ARJEN SRL'
-    hoja['N5'] = Alimentador[0]
+    hoja['N5'] = Alimentador[0] + ' / ' + CodSed
     hoja['N6'] = Fecha[0]
+    hoja['N7'] = NroOrden
     rango_origen_CuadroSumTotal = hoja["B8:I23"] 
     rango_origenColumnas = hoja["M8:M37"]
 
@@ -90,7 +94,7 @@ def GenerarReporteValorizacion(CodSed,PathSave="D://"):
     # Paso 4: Escribir los datos del DataFrame en la hoja
     for r_idx, row in enumerate(df.iterrows(), 1):
         for c_idx, value in enumerate(row[1], 1):
-            celda = hoja.cell(row=r_idx+5, column=c_idx+12, value=value)
+            celda = hoja.cell(row=r_idx+7, column=c_idx+12, value=value)
             
     
     copiar(hoja,rango_origen_CuadroSumTotal,0,len(results[2]) + 11)
@@ -147,8 +151,9 @@ def GenerarReporteValorizacion(CodSed,PathSave="D://"):
     print(len(results[2]))
 
     hoja['N4'] = 'ARJEN SRL'
-    hoja['N5'] = Alimentador[0]
+    hoja['N5'] = Alimentador[0] + ' / ' + CodSed
     hoja['N6'] = Fecha[0]
+    hoja['N7'] = NroOrden
     rango_origen_CuadroSumTotal = hoja["B8:I23"] 
     rango_origenColumnas = hoja["M8:M37"]
 
@@ -216,8 +221,9 @@ def GenerarReporteValorizacion(CodSed,PathSave="D://"):
     print(len(results[2]))
 
     hoja['N4'] = 'ARJEN SRL'
-    hoja['N5'] = CodSed + ' - ' + Alimentador[0]
+    hoja['N5'] = Alimentador[0] + ' / ' + CodSed
     hoja['N6'] = Fecha[0]
+    hoja['N7'] = NroOrden
     rango_origen_CuadroSumTotal = hoja["B8:I23"] 
     rango_origenColumnas = hoja["M8:M37"]
 

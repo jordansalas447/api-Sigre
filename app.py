@@ -41,7 +41,7 @@ def ExportarReportePresentacionSeal():
 
         print(NroOrden)
 
-        Path, Name_File = GenerarReporte(str(rows[0]), pathSave, path,NroOrden)
+        Path, Name_File = GenerarReporte(str(rows[0]), pathSave, path,NroOrden,CodSubestacion)
 
         return send_file(Path, as_attachment=True, download_name=Name_File)
 
@@ -58,15 +58,15 @@ def ExportarReporteValorizacion():
         cursor = cnxn.cursor()
 
         CodSed = request.args.get('sedCodigo') 
+        NroOrden = request.args.get('NroOrden') 
  
-        Path, Name_File = GenerarReporteValorizacion(CodSed)
+        Path, Name_File = GenerarReporteValorizacion(CodSed,NroOrden)
 
         return send_file(Path, as_attachment=True, download_name=Name_File)
 
     #finally:
         cursor.close()
         #cnxn.close()
-
 
 @app.route("/alimentadoresetiqueta", methods=["GET"])
 def get_alimentadores_etiqueta():
@@ -477,6 +477,7 @@ def desglosadoelementosdeficiencia():
 
         SEDCodigo = request.args.get('SEDCodigo')
         TipoElemento = request.args.get('TipoElemento')
+        NroOrden = request.args.get('NroOrden')
 
         if not SEDCodigo:
             return jsonify({"error": "SEDCodigo es requerido"}), 400
