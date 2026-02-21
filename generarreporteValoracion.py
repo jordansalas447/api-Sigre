@@ -22,6 +22,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 def GenerarReporteValorizacion(CodSed,NroOrden=""):
     cnxn = get_connection()
     cursor = cnxn.cursor()
+    
     PathSave = os.path.join(os.path.sep)
 
     ruta_del_archivo_existente = os.path.join(BASE_DIR, "Reporte", "ReportesSigreValorizacion.xlsx")
