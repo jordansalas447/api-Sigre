@@ -268,7 +268,59 @@ def buscarelemento():
             return jsonify({"error": "codIns es requerido"}), 400
 
         # ----------- CONSULTA 1 -------------------
-        cursor.execute("exec sp_GetElementoDetailsByCodigo ? , ?", codIns , Elemento)
+        cursor.execute("""
+        select 
+el.Interno,
+el.Codigo,
+el.Etiqueta,
+el.Terceros,
+el.LatitudIni,
+el.LongitudIni,
+el.LatitudFin,
+el.LongitudFin,
+el.NodoInicial,
+el.NodoFinal,
+el.TipoElemento,
+a.ALIM_Etiqueta as Alimentador,
+s.SED_Codigo as Codigo
+from  (   
+   -- POSTES
+    SELECT  
+        p.POST_Interno        AS Interno,
+        p.POST_CodigoNodo     AS Codigo,
+        p.POST_Etiqueta AS Etiqueta,
+        p.ALIM_Interno AS Alimentador,
+        p.POST_Subestacion AS Subestacion,
+        p.POST_Terceros as Terceros,
+		p.POST_Latitud as LatitudIni,
+		p.POST_Longitud as LongitudIni,
+		'' as LatitudFin,
+		'' as LongitudFin,
+		'' as NodoInicial,
+		'' as NodoFinal,
+        'POST' as TipoElemento
+    FROM  Postes p where POST_EsBT = 1
+    UNION ALL
+    -- VANOS
+    SELECT  
+        v.VANO_Interno        AS Interno,
+        v.VANO_Codigo         AS Codigo,
+        v.VANO_Etiqueta AS Etiqueta,
+        v.ALIM_Interno AS Alimentador,
+        v.VANO_Subestacion AS Subestacion,
+        v.VANO_Terceros as Terceros,
+		V.VANO_LatitudIni as LatitudIni,
+		V.VANO_LongitudIni as LongitudIni,
+		V.VANO_LatitudFin as LatitudFin,
+		V.VANO_LongitudFin as LongitudFin,
+		V.VANO_NodoInicial  as NodoInicial,
+		V.VANO_NodoFinal as NodoFinal,
+        'VANO' as TipoElemento
+    FROM  Vanos v where v.VANO_EsBT = 1 ) as el
+	inner join Alimentadores a on el.Alimentador = a.ALIM_Interno
+	inner join Seds s on s.SED_Interno = el.Subestacion
+	where el.Codigo = ?
+        """, (codIns))
         
         columns = [column[0] for column in cursor.description]
         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
