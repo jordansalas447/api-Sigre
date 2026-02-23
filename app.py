@@ -317,8 +317,8 @@ from  (
 		V.VANO_NodoFinal as NodoFinal,
         'VANO' as TipoElemento
     FROM  Vanos v where v.VANO_EsBT = 1 ) as el
-	inner join Alimentadores a on el.Alimentador = a.ALIM_Interno
-	inner join Seds s on s.SED_Interno = el.Subestacion
+	left join Alimentadores a on el.Alimentador = a.ALIM_Interno
+	left join Seds s on s.SED_Interno = el.Subestacion
 	where el.Codigo = ?
         """, (codIns))
         
