@@ -24,9 +24,9 @@ CASE
 END
 ,
 t.Tipificacion) as 'CodigoTipificaciondeladeficiencia',
-t.Observacion as 'Descripciondeladeficiencia',
+t.CODI_ComentarioEstandar as 'Descripciondeladeficiencia',
 t.Criticidad as 'Gravedaddeladeficiencia',
-iif(t.CODI_ComentarioEstandar = 'Tercero','TERCERO','SEAL') as 'Responsabilidadgeneracióndeficiencia',
+iif(t.DEFI_Col2 = 'Tercero','TERCERO','SEAL') as 'Responsabilidadgeneracióndeficiencia',
 convert(date,t.DEFI_FecRegistro) as 'FechadeIdentificacion',
 t.Corregido as 'HipervinculodeRegistroFotografico'
 from (
@@ -41,11 +41,11 @@ CASE
     ELSE CONVERT(nvarchar,t.DEFI_EstadoCriticidad)
 END as Criticidad,
 iif(t.CODI_Codigo is null,'S/D',t.CODI_Codigo) as Tipificacion,
-t.CODI_ComentarioEstandar,
 t.ALIM_Etiqueta ,
 t.NodoInicial,
 t.NodoFinal,
 t.SED_Codigo,
+t.DEFI_Col2,
 iif(t.DEFI_NumSuministro is null ,'', t.DEFI_NumSuministro) as NumSuministro,
 t.DEFI_DistHorizontal,
 t.DEFI_DistVertical,
@@ -53,6 +53,7 @@ t.DEFI_FecRegistro,
 iif(t.DEFI_Observacion is null, '',t.DEFI_Observacion) as Observacion,
 iif(t.DEFI_Comentario is null, '',t.DEFI_Comentario) as Comentario,
 t.USUA_Nombres,
+t.CODI_ComentarioEstandar,
 t.Ruta as Corregido
 FROM (
 select * from (
@@ -67,6 +68,7 @@ c.CODI_Codigo,
 c.CODI_ComentarioEstandar,
 a.ALIM_Etiqueta ,
 s.SED_Codigo,
+d.DEFI_Col2,
 d.DEFI_NumSuministro ,
 d.DEFI_DistHorizontal,
 d.DEFI_DistVertical,
