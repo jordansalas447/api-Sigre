@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from app.filtros.queryfiltros import queryElemetosDuplicadosxSed, querySindeffyDeffxSed, queryfiltroArchivosDuplicados , queryNodoIF , queryFechas, queryNroSuministroErroneo ,queryDeficienciaSinCriticidad
+from app.filtros.queryfiltros import queryElemetosDuplicadosxSed, querySindeffyDeffxSed, queryfiltroArchivosDuplicados , queryNodoIF , queryFechas, queryNroSuministroErroneo ,queryDeficienciaSinCriticidad ,query7004y7006en0
 from ..config import get_connection
 
 filtros_bp = Blueprint('filtros', __name__, url_prefix='/filtros')
@@ -192,6 +192,34 @@ def DefSinCriticidad():
 
         # ----------- CONSULTA 1 -------------------
         query = queryDeficienciaSinCriticidad
+        
+        cursor.execute(query, SEDCodigo)
+        
+        columns = [column[0] for column in cursor.description]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        return jsonify({
+            "data": rows
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  
+    
+
+@filtros_bp.route('/Def7004y7006en0', methods=['GET'])
+def Def7004y7006en0():  
+    try:
+
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
+        SEDCodigo = request.args.get('SEDCodigo')
+
+        if not SEDCodigo:
+            return jsonify({"error": "SEDCodigo es requerido"}), 400
+
+        # ----------- CONSULTA 1 -------------------
+        query = query7004y7006en0
         
         cursor.execute(query, SEDCodigo)
         
