@@ -7,17 +7,19 @@ from app.routes.filtros import filtros_bp
 from app.routes.reportes import reportes_bp
 from app.routes.rama import rama_bp
 from app.routes.carpetas import carpetas_bp
+from app.routes.estadisticas import estadisticas_bp
 from app.generarreporteSealV1 import GenerarReporte
 from app.config import get_connection
 from app.globals import TotalDeficienciasxElemento, queryElemetosxSed , queryElemetosNoInspeccionados ,queryEstadodeElementos,queryReporteRevision,ConsInsTotalDesglosado,queryTotalElementoInspeccionadosxDeficiencia
 from app.filtros.queryfiltros import queryElemetosDuplicadosxSed,querySindeffyDeffxSed,queryfiltroArchivosDuplicados
 from app.script import movefilesCorregidoEP, validefileonlyfilecorrectedJson
+#from flask_socketio import SocketIO, emit
 #cnxn = Config.cnxn
 #cursor = cnxn.cursor()
 
 app = Flask(__name__)
 CORS(app)
-
+#socketio = SocketIO(app, cors_allowed_origins="*")
 
 @app.route('/', methods=['GET'])
 def Inicio():
@@ -1152,10 +1154,23 @@ def listar_imagenes():
 
     return jsonify(imagenes)
 
+
+# @socketio.on("connect")
+# def handle_connect():
+#     print("Cliente conectado")
+#     emit("mensaje_servidor", "Bienvenido 👋")
+
+# @socketio.on("mensaje_cliente")
+# def handle_message(data):
+#     print("Mensaje:", data)
+#     emit("mensaje_servidor", f"Servidor recibió: {data}", broadcast=True)
+
 app.register_blueprint(reportes_bp) 
 app.register_blueprint(filtros_bp) 
 app.register_blueprint(rama_bp)
 app.register_blueprint(carpetas_bp)
+app.register_blueprint(estadisticas_bp)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
+ #   socketio.run(app, host="0.0.0.0", port=5000, debug=True)
