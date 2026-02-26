@@ -52,7 +52,7 @@ t.DEFI_DistVertical,
 t.DEFI_FecRegistro,
 iif(t.DEFI_Observacion is null, '',t.DEFI_Observacion) as Observacion,
 iif(t.DEFI_Comentario is null, '',t.DEFI_Comentario) as Comentario,
-t.USUA_Nombres,
+--t.USUA_Nombres,
 t.CODI_ComentarioEstandar,
 t.Ruta as Corregido
 FROM (
@@ -75,7 +75,7 @@ d.DEFI_DistVertical,
 d.DEFI_FecRegistro,
 d.DEFI_Observacion,
 d.DEFI_Comentario,
-u.USUA_Nombres,
+--u.USUA_Nombres,
 CONCAT(
 'D:/Fotos-Reportes/',
 a.ALIM_Etiqueta,
@@ -123,7 +123,7 @@ from (
     left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
     left join Codigos c on c.CODI_Interno = t.CODI_Interno
     left join Alimentadores a on a.ALIM_Interno = el.Alimentador
-    left join Usuarios u on u.USUA_Interno = d.DEFI_UsuarioMod
+    --left join Usuarios u on u.USUA_Interno = d.DEFI_UsuarioMod
     left join Archivos ar on ar.ARCH_IdElemento = el.Interno and ar.ARCH_TipoElemento = el.TipoElemento
     left join
     (
