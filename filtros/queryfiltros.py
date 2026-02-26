@@ -352,3 +352,36 @@ where
 ((c.CODI_Codigo = '7004' and (d.DEFI_DistHorizontal is null or d.DEFI_DistHorizontal = '0')) or (c.CODI_Codigo = '7006' and (d.DEFI_DistVertical is null or d.DEFI_DistVertical = '0'))) 
 and d.DEFI_Activo = 1 and s.SED_Codigo = ?
 """
+
+queryDeficienciasconCriticidadLeve = """
+select el.Codigo,c.CODI_Codigo,d.DEFI_EstadoCriticidad,s.SED_Codigo from (
+       -- POSTES
+    SELECT  
+        p.POST_Interno        AS Interno,
+        p.POST_CodigoNodo     AS Codigo,
+        p.POST_Etiqueta AS Etiqueta,
+        p.ALIM_Interno AS Alimentador,
+        p.POST_Subestacion AS Subestacion,
+        'POST' as TipoElemento
+    FROM  Postes p where POST_EsBT = 1
+    UNION ALL
+    -- VANOS
+    SELECT  
+        v.VANO_Interno        AS Interno,
+        v.VANO_Codigo         AS Codigo,
+        v.VANO_Etiqueta AS Etiqueta,
+        v.ALIM_Interno AS Alimentador,
+        v.VANO_Subestacion AS Subestacion,
+        'VANO' as TipoElemento
+    FROM  Vanos v where v.VANO_EsBT = 1
+    ) as el inner join (select * from Deficiencias where DEFI_Activo = 1) d on 
+	d.DEFI_TipoElemento = el.TipoElemento and 
+	d.DEFI_IdElemento = el.Interno
+	inner join Seds s on s.SED_Interno = el.Subestacion
+	left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno 
+	left join Codigos c on c.CODI_Interno = t.CODI_Interno
+	where 
+	c.CODI_Codigo in ('7006','7004','7002') and d.DEFI_EstadoCriticidad in (1,0,2) and
+	s.SED_Codigo = ?
+	order by s.SED_Codigo
+"""
