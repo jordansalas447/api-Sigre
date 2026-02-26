@@ -717,15 +717,19 @@ def reporteinspectoresxfecha():
 
         # ----------- CONSULTA 1 -------------------
         query = """
+SELECT INSPECTOR, [POST] as 'POSTE(S)', [VANO] as 'VANO(S)'
+FROM
+(
     SELECT 
         COUNT(t.Codigo) AS Total,
         t.TipoElemento,
-        t.USUA_Nombres
+        CONCAT(t.USUA_Nombres ,' ',t.USUA_Apellidos) as INSPECTOR
     FROM (
         SELECT DISTINCT
             el.Codigo,
             el.TipoElemento,
-            u.USUA_Nombres
+            u.USUA_Nombres,
+			u.USUA_Apellidos
         FROM (   
             -- POSTES
             SELECT  
@@ -762,15 +766,19 @@ def reporteinspectoresxfecha():
             ON c.CODI_Interno = t.CODI_Interno
         LEFT JOIN Alimentadores a 
             ON a.ALIM_Interno = el.Alimentador
-        LEFT JOIN Usuarios u 
+        INNER JOIN Usuarios u 
             ON u.USUA_Interno = d.DEFI_UsuarioInic
         WHERE CONVERT(DATE, d.DEFI_FechaCreacion) = ?
     ) AS t
     GROUP BY 
-        t.USUA_Nombres,
+        CONCAT(t.USUA_Nombres ,' ',t.USUA_Apellidos),
         t.TipoElemento
-    ORDER BY 
-        t.USUA_Nombres;
+) AS SourceTable
+PIVOT
+(
+    SUM(Total)
+    FOR TipoElemento IN ([POST], [VANO])
+) AS PivotTable;
         """
         cursor.execute(query, fecha)
         
