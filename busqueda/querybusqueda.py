@@ -58,7 +58,6 @@ DECLARE @Centro GEOGRAPHY = GEOGRAPHY::Point(?, ?, 4326);
 -- Radio en metros
 DECLARE @Radio FLOAT = ?;  
 
--- Seleccionar puntos dentro del círculo
 	select 
 		el.Codigo,
 		el.Etiqueta,
@@ -66,7 +65,8 @@ DECLARE @Radio FLOAT = ?;
 		el.LongitudIni,
 		el.LatitudFin,
 		el.LongitudFin, 
-		el.Alimentador
+		al.ALIM_Etiqueta,
+		s.SED_Codigo
 	from  (   
    -- POSTES
     SELECT  
@@ -101,9 +101,7 @@ DECLARE @Radio FLOAT = ?;
 		V.VANO_NodoFinal as NodoFinal,
         'VANO' as TipoElemento
     FROM  Vanos v where v.VANO_EsBT = 1 ) as el
-	--left join Seds s on el.Subestacion = s.SED_Interno
-	--left join Alimentadores al on al.ALIM_Interno = el.Alimentador
-	--left join Alimentadores al2 on al2.ALIM_Interno = s.ALIM_Interno
---	where el.Alimentador = 200 -- and s.ALIM_Interno <> 200
+	left join Seds s on el.Subestacion = s.SED_Interno
+	left join Alimentadores al on al.ALIM_Interno = el.Alimentador
 WHERE (GEOGRAPHY::Point(el.LatitudIni, el.LongitudIni, 4326).STDistance(@Centro) <= @Radio or GEOGRAPHY::Point(el.LatitudFin, el.LongitudFin, 4326).STDistance(@Centro) <= @Radio);
 """
