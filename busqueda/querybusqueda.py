@@ -3,14 +3,12 @@ select
 el.Interno,
 el.Codigo,
 el.Etiqueta,
-el.Latitud,
-el.Longitud,
-el.Latitud2,
-el.Longitud2,
-c.CODI_Codigo as Tipificacion,
-d.DEFI_EstadoCriticidad as Criticidad,
-s.SED_Codigo as Subestacion,
-a.ALIM_Etiqueta as Alimentador
+el.Latitud as LatitudIni,
+el.Longitud as LongitudIni,
+el.Latitud2 as LatitudFin,
+el.Longitud2 as LongitudFin,
+s.SED_Codigo,
+a.ALIM_Etiqueta
 from (
        -- POSTES
     SELECT  
