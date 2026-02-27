@@ -3,6 +3,7 @@ from flask import Flask, send_file, request , jsonify , abort
 from flask_cors import CORS
 from pandas.core.frame import console
 from app.generarreporteValoracion import GenerarReporteValorizacion
+from app.routes.busqueda import busqueda_bp
 from app.routes.filtros import filtros_bp
 from app.routes.reportes import reportes_bp
 from app.routes.rama import rama_bp
@@ -1178,6 +1179,7 @@ app.register_blueprint(filtros_bp)
 app.register_blueprint(rama_bp)
 app.register_blueprint(carpetas_bp)
 app.register_blueprint(estadisticas_bp)
+app.register_blueprint(busqueda_bp)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
