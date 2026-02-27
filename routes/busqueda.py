@@ -10,10 +10,10 @@ def reporte_costa():
         cnxn = get_connection()
         cursor = cnxn.cursor()
 
-        SEDCodigo = request.args.get('SEDCodigo')
+        SEDCodigo = request.args.get('Etiqueta')
 
         if not SEDCodigo:
-            return jsonify({"error": "SEDCodigo es requerido"}), 400
+            return jsonify({"error": "Etiqueta es requerido"}), 400
 
         cursor.execute(queryBuscarporEtiqueta, (SEDCodigo))
         
@@ -26,3 +26,8 @@ def reporte_costa():
     finally:
         cursor.close()
         cnxn.close()
+
+
+
+
+
