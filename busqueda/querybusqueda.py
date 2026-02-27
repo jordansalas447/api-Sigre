@@ -43,7 +43,7 @@ from (
 	left join (select * from Deficiencias where DEFI_Activo = 1) d on 
 	d.DEFI_TipoElemento = el.TipoElemento and 
 	d.DEFI_IdElemento = el.Interno
-	inner join Seds s on s.SED_Interno = el.Subestacion
+	left join Seds s on s.SED_Interno = el.Subestacion
 	left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno 
 	left join Codigos c on c.CODI_Interno = t.CODI_Interno
 	left join Alimentadores a on a.ALIM_Interno = el.Alimentador
