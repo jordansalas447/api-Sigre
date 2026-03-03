@@ -25,13 +25,13 @@ CONNECTION_STRING = (
      r"MARS_Connection=Yes;"
 )
 
-# CONNECTION_STRING2 = (
-#    r"Driver={ODBC Driver 18 for SQL Server};"
-#    r"Server=.\SQLEXPRESS;"
-#    r"Database=Sigre;"
-#    r"Trusted_Connection=yes;"
-#    r"TrustServerCertificate=yes;"
-# )
+CONNECTION_STRING2 = (
+    r"Driver={ODBC Driver 18 for SQL Server};"
+    r"Server=LENOVO;"
+    r"Database=Sigre10022026;"
+    r"Trusted_Connection=yes;"
+    r"TrustServerCertificate=yes;"
+ )
 
 # CONNECTION_STRING3 = (
 #     r"DRIVER={ODBC Driver 18 for SQL Server};"

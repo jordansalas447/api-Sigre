@@ -4,6 +4,7 @@ from flask_cors import CORS
 from pandas.core.frame import console
 from app.generarreporteValoracion import GenerarReporteValorizacion
 from app.routes.busqueda import busqueda_bp
+from app.routes.elemento import elemento_bp
 from app.routes.filtros import filtros_bp
 from app.routes.reportes import reportes_bp
 from app.routes.rama import rama_bp
@@ -285,7 +286,9 @@ el.NodoInicial,
 el.NodoFinal,
 el.TipoElemento,
 a.ALIM_Etiqueta as Alimentador,
-s.SED_Codigo as Codigo
+a.ALIM_Interno,
+s.SED_Interno,
+s.SED_Codigo
 from  (   
    -- POSTES
     SELECT  
@@ -712,76 +715,84 @@ def reporteinspectoresxfecha():
         cursor = cnxn.cursor()
 
         fecha = request.args.get('fecha')
+        inspector = request.args.get('inspector')
 
         if not fecha:
             return jsonify({"error": "fecha es requerido"}), 400
 
         # ----------- CONSULTA 1 -------------------
         query = """
-SELECT INSPECTOR, [POST] as 'POSTE(S)', [VANO] as 'VANO(S)'
-FROM
-(
-    SELECT 
-        COUNT(t.Codigo) AS Total,
-        t.TipoElemento,
-        CONCAT(t.USUA_Nombres ,' ',t.USUA_Apellidos) as INSPECTOR
-    FROM (
-        SELECT DISTINCT
-            el.Codigo,
-            el.TipoElemento,
-            u.USUA_Nombres,
-			u.USUA_Apellidos
-        FROM (   
-            -- POSTES
-            SELECT  
-                p.POST_Interno        AS Interno,
-                p.POST_CodigoNodo     AS Codigo,
-                p.POST_Etiqueta       AS Etiqueta,
-                p.ALIM_Interno        AS Alimentador,
-                p.POST_Subestacion    AS Subestacion,
-                'POST'                AS TipoElemento
-            FROM Postes p 
-            WHERE p.POST_EsBT = 1
 
-            UNION ALL
+        DECLARE @Fecha DATE = ?;
+        DECLARE @UsuarioInterno int = ?;    
 
-            -- VANOS
-            SELECT  
-                v.VANO_Interno        AS Interno,
-                v.VANO_Codigo         AS Codigo,
-                v.VANO_Etiqueta       AS Etiqueta,
-                v.ALIM_Interno        AS Alimentador,
-                v.VANO_Subestacion    AS Subestacion,
-                'VANO'                AS TipoElemento
-            FROM Vanos v 
-            WHERE v.VANO_EsBT = 1
-        ) AS el
-        INNER JOIN Seds s 
-            ON el.Subestacion = s.SED_Interno
-        INNER JOIN Deficiencias d 
-            ON d.DEFI_IdElemento = el.Interno 
-           AND d.DEFI_TipoElemento = el.TipoElemento
-        LEFT JOIN Tipificaciones t 
-            ON t.TIPI_Interno = d.TIPI_Interno
-        LEFT JOIN Codigos c 
-            ON c.CODI_Interno = t.CODI_Interno
-        LEFT JOIN Alimentadores a 
-            ON a.ALIM_Interno = el.Alimentador
-        INNER JOIN Usuarios u 
-            ON u.USUA_Interno = d.DEFI_UsuarioInic
-        WHERE CONVERT(DATE, d.DEFI_FechaCreacion) = ?
-    ) AS t
-    GROUP BY 
-        CONCAT(t.USUA_Nombres ,' ',t.USUA_Apellidos),
-        t.TipoElemento
-) AS SourceTable
-PIVOT
-(
-    SUM(Total)
-    FOR TipoElemento IN ([POST], [VANO])
-) AS PivotTable;
+        SELECT INSPECTOR, [POST] as 'POSTE(S)', [VANO] as 'VANO(S)'
+        FROM
+        (
+            SELECT 
+                COUNT(t.Codigo) AS Total,
+                t.TipoElemento,
+                CONCAT(t.USUA_Nombres ,' ',t.USUA_Apellidos) as INSPECTOR
+            FROM (
+                SELECT DISTINCT
+                    el.Codigo,
+                    el.TipoElemento,
+                    u.USUA_Nombres,
+        			u.USUA_Apellidos
+                FROM (   
+                    -- POSTES
+                    SELECT  
+                        p.POST_Interno        AS Interno,
+                        p.POST_CodigoNodo     AS Codigo,
+                        p.POST_Etiqueta       AS Etiqueta,
+                        p.ALIM_Interno        AS Alimentador,
+                        p.POST_Subestacion    AS Subestacion,
+                        'POST'                AS TipoElemento
+                    FROM Postes p 
+                    WHERE p.POST_EsBT = 1
+
+                    UNION ALL
+
+                    -- VANOS
+                    SELECT  
+                        v.VANO_Interno        AS Interno,
+                        v.VANO_Codigo         AS Codigo,
+                        v.VANO_Etiqueta       AS Etiqueta,
+                        v.ALIM_Interno        AS Alimentador,
+                        v.VANO_Subestacion    AS Subestacion,
+                        'VANO'                AS TipoElemento
+                    FROM Vanos v 
+                    WHERE v.VANO_EsBT = 1
+                ) AS el
+                INNER JOIN Seds s 
+                    ON el.Subestacion = s.SED_Interno
+                INNER JOIN Deficiencias d 
+                    ON d.DEFI_IdElemento = el.Interno 
+                   AND d.DEFI_TipoElemento = el.TipoElemento
+                LEFT JOIN Tipificaciones t 
+                    ON t.TIPI_Interno = d.TIPI_Interno
+                LEFT JOIN Codigos c 
+                    ON c.CODI_Interno = t.CODI_Interno
+                LEFT JOIN Alimentadores a 
+                    ON a.ALIM_Interno = el.Alimentador
+                INNER JOIN Usuarios u 
+                    ON u.USUA_Interno = d.DEFI_UsuarioInic
+                WHERE CONVERT(DATE, d.DEFI_FechaCreacion) = @Fecha AND (
+                @UsuarioInterno = 0
+                OR u.USUA_Interno = @UsuarioInterno
+            )
+            ) AS t
+            GROUP BY 
+                CONCAT(t.USUA_Nombres ,' ',t.USUA_Apellidos),
+                t.TipoElemento
+        ) AS SourceTable
+        PIVOT
+        (
+            SUM(Total)
+            FOR TipoElemento IN ([POST], [VANO])
+        ) AS PivotTable;
         """
-        cursor.execute(query, fecha)
+        cursor.execute(query, (fecha,inspector))
         
         columns = [column[0] for column in cursor.description]
         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
@@ -1180,6 +1191,7 @@ app.register_blueprint(rama_bp)
 app.register_blueprint(carpetas_bp)
 app.register_blueprint(estadisticas_bp)
 app.register_blueprint(busqueda_bp)
+app.register_blueprint(elemento_bp)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')

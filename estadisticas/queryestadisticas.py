@@ -68,3 +68,21 @@ from  (
 	where s.SED_Codigo = @SED
 	group by s.SED_Codigo ;
 """
+
+
+queryElementosInspeccionadosPorInspector = f"""
+select 
+d.DEFI_CodigoElemento as CodIns,
+--d.DEFI_FecModificacion,
+CONVERT(VARCHAR(8), d.DEFI_FechaCreacion, 108) as 'Hora de Creación',
+ui.USUA_Nombres as Inspector,
+iif(c.CODI_Codigo is null,'S/D',c.CODI_Codigo) as Tipificación
+--um.USUA_Nombres
+from Deficiencias d
+inner join Usuarios ui on convert(nvarchar,d.DEFI_UsuarioInic) = convert(nvarchar,ui.USUA_Interno)
+inner join Usuarios um on convert(nvarchar,d.DEFI_UsuarioMod) = convert(nvarchar,um.USUA_Interno)
+left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
+left join Codigos c on c.CODI_Interno = t.CODI_Interno
+where convert(date,d.DEFI_FecRegistro) = ? and d.DEFI_UsuarioInic = ?
+order by d.DEFI_Interno desc
+"""
