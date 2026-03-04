@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from ..Carpetas.query import queryValidarCarpetas , queryCorregirCarpetas
+from ..Carpetas.query import queryValidarCarpetas , queryCorregirCarpetas, queryobtenerrutaelemento
 from ..config import get_connection
 from ..Utils.corregircarpetas import copiar_carpetas_por_codigos
 from ..Utils.validarcarpetas import verificar_rutas
@@ -95,6 +95,31 @@ def corregirListado():
             return jsonify({"error": "SEDCodigo es requerido"}), 400
 
         cursor.execute(queryCorregirCarpetas, (SEDCodigo))
+            
+        #rows = copiar_carpetas_por_codigos(SEDCodigo,PathRemoto,cursor.fetchall())
+
+        columns = [column[0] for column in cursor.description]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        
+        return jsonify({"data": rows})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@carpetas_bp.route('/ObtenerFotosElemento', methods=['GET'])
+def ObtenerFotosElemento():
+    try:
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+        
+        Interno = request.args.get('Interno')
+        TippoElemento = request.args.get('TippoElemento')
+        Tipificacion = request.args.get('Tipificacion')
+
+        if not Interno or TippoElemento or Tipificacion:
+            return jsonify({"error": "Parametro requerido"}), 400
+
+        cursor.execute(queryobtenerrutaelemento, (Interno,TippoElemento,Tipificacion))
             
         #rows = copiar_carpetas_por_codigos(SEDCodigo,PathRemoto,cursor.fetchall())
 
