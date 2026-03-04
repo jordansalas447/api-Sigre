@@ -116,9 +116,6 @@ def ObtenerFotosElemento():
         TippoElemento = request.args.get('TippoElemento')
         Tipificacion = request.args.get('Tipificacion')
 
-        if not Interno or TippoElemento or Tipificacion:
-            return jsonify({"error": "Parametro requerido"}), 400
-
         cursor.execute(queryobtenerrutaelemento, (Interno,TippoElemento,Tipificacion))
             
         #rows = copiar_carpetas_por_codigos(SEDCodigo,PathRemoto,cursor.fetchall())
