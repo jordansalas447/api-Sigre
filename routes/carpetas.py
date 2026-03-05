@@ -117,7 +117,7 @@ def ObtenerFotosElemento():
         Tipificacion = request.args.get('Tipificacion')
 
         cursor.execute(queryobtenerrutaelemento, (Interno,TippoElemento,Tipificacion))
-            
+        #
         #rows = copiar_carpetas_por_codigos(SEDCodigo,PathRemoto,cursor.fetchall())
 
         columns = [column[0] for column in cursor.description]
