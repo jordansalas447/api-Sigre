@@ -75,6 +75,8 @@ select
 d.DEFI_CodigoElemento as CodIns,
 --d.DEFI_FecModificacion,
 CONVERT(VARCHAR(8), d.DEFI_FechaCreacion, 108) as 'Hora de Creación',
+d.DEFI_Latitud as Latitud,
+d.DEFI_Longitud as Longitud,
 ui.USUA_Nombres as Inspector,
 iif(c.CODI_Codigo is null,'S/D',c.CODI_Codigo) as Tipificación
 --um.USUA_Nombres
