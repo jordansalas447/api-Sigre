@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from ..Carpetas.query import queryValidarCarpetas , queryCorregirCarpetas, queryobtenerrutaelemento
+from ..Carpetas.query import queryEstructuraPresentacion, queryValidarCarpetas , queryCorregirCarpetas, queryobtenerrutaelemento
 from ..config import get_connection
 from ..Utils.corregircarpetas import copiar_carpetas_por_codigos
 from ..Utils.validarcarpetas import verificar_rutas
@@ -119,6 +119,26 @@ def ObtenerFotosElemento():
         cursor.execute(queryobtenerrutaelemento, (Interno,TippoElemento,Tipificacion))
         #
         #rows = copiar_carpetas_por_codigos(SEDCodigo,PathRemoto,cursor.fetchall())
+
+        columns = [column[0] for column in cursor.description]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        
+        return jsonify({"data": rows})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
+@carpetas_bp.route('/ObtenerEstructuraPresentacion', methods=['GET'])
+def ObtenerEstructuraPresentacion():
+    try:
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+        
+        CodigoSED = request.args.get('CodigoSED')
+        NroOrden = request.args.get('NroOrden')
+
+        cursor.execute(queryEstructuraPresentacion, (CodigoSED,NroOrden))
 
         columns = [column[0] for column in cursor.description]
         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]

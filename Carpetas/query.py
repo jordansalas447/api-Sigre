@@ -214,3 +214,23 @@ queryobtenerrutaelemento = """
     where el.Interno = ? and el.TipoElemento = ? and c.CODI_Codigo = ?
     order by el.Codigo
 """
+
+
+queryEstructuraPresentacion = """
+declare @NroOrden varchar(10) = ?
+SELECT 
+	concat('OT ',@NroOrden,'/',UPPER(a.ALIM_Etiqueta),'/',s.SED_Codigo,'/',t.letra) as Ruta
+FROM Seds s
+INNER JOIN Alimentadores a 
+    ON s.ALIM_Interno = a.ALIM_Interno
+CROSS JOIN (
+    SELECT '1 Informe de ejecución' AS letra
+    UNION ALL
+    SELECT '2 Archivo de fotos/Fotos-Reportes'
+    UNION ALL
+    SELECT '3 Orden de servicio valorizada'
+    UNION ALL
+    SELECT '4 Formatos de Seguridad'
+) AS t
+WHERE s.SED_Codigo = ?;
+"""
