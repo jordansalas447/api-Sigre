@@ -72,6 +72,7 @@ from  (
 
 queryElementosInspeccionadosPorInspector = f"""
 select 
+d.DEFI_Interno as CodeDef,
 d.DEFI_CodigoElemento as CodIns,
 --d.DEFI_FecModificacion,
 CONVERT(VARCHAR(8), d.DEFI_FechaCreacion, 108) as 'Hora de Creación',
