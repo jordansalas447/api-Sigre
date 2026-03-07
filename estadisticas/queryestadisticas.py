@@ -89,3 +89,5 @@ left join Codigos c on c.CODI_Interno = t.CODI_Interno
 where convert(date,d.DEFI_FecRegistro) = ? and d.DEFI_UsuarioInic = ?
 order by d.DEFI_Interno desc
 """
+
+
