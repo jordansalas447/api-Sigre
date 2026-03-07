@@ -1,10 +1,13 @@
 from flask import Blueprint, jsonify, request
-from ..Carpetas.query import queryEstructuraPresentacion, queryValidarCarpetas , queryCorregirCarpetas, queryobtenerrutaelemento, queryobtenerrutaelementoporinterno
+from ..Carpetas.query import queryEstructuraPresentacion, queryValidarCarpetas , queryCorregirCarpetas, queryobtenerrutaelemento, queryobtenerrutaelementoporCodyTipi, queryobtenerrutaelementoporinterno
 from ..config import get_connection
 from ..Utils.corregircarpetas import copiar_carpetas_por_codigos
 from ..Utils.validarcarpetas import verificar_rutas
+import requests
+from requests.auth import HTTPBasicAuth
 
 carpetas_bp = Blueprint('carpetas', __name__, url_prefix='/carpetas')
+url = "https://api.imagekit.io/v1/files"
 
 @carpetas_bp.route('/validar', methods=['POST'])
 def validar():
@@ -153,21 +156,30 @@ def ObtenerFotosElemento():
 
 @carpetas_bp.route('/ObtenerFotosElementoporinterno', methods=['GET'])
 def ObtenerFotosElementoporinterno():
-    try:
+    #try:
         cnxn = get_connection()
         cursor = cnxn.cursor()
         
-        Interno = request.args.get('Interno')
+        CodIns = request.args.get('CodIns')
+        Tipi = request.args.get('Tipi')
+        ResponseURL = []
 
-        cursor.execute(queryobtenerrutaelementoporinterno, (Interno))
+        cursor.execute(queryobtenerrutaelementoporCodyTipi, (CodIns,Tipi))
         #
         #rows = copiar_carpetas_por_codigos(SEDCodigo,PathRemoto,cursor.fetchall())
+        params = { "path": f"/Fotos-Reportes/{cursor.fetchone()[0]}", "limit": 100    }
 
-        columns = [column[0] for column in cursor.description]
-        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        response = requests.get(url,params=params,auth=HTTPBasicAuth("private_/1jjGA95byeV3n8ZIVR0f1CrVMg=", ""))
+
+        files = response.json()
         
-        return jsonify({"data": rows})
-    except Exception as e:
+        for f in files:
+            ResponseURL.append(f["url"])
+        #columns = [column[0] for column in cursor.description]
+        #rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        
+        return jsonify({"data": ResponseURL})
+    #except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
@@ -189,3 +201,4 @@ def ObtenerEstructuraPresentacion():
         return jsonify({"data": rows})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
