@@ -128,26 +128,26 @@ def ObtenerFotosElemento():
         return jsonify({"error": str(e)}), 500
 
 
-@carpetas_bp.route('/ObtenerFotosElemento', methods=['GET'])
-def ObtenerFotosElemento():
-    try:
-        cnxn = get_connection()
-        cursor = cnxn.cursor()
+# @carpetas_bp.route('/ObtenerFotosElemento', methods=['GET'])
+# def ObtenerFotosElemento():
+#     try:
+#         cnxn = get_connection()
+#         cursor = cnxn.cursor()
         
-        Interno = request.args.get('Interno')
-        TippoElemento = request.args.get('TippoElemento')
-        Tipificacion = request.args.get('Tipificacion')
+#         Interno = request.args.get('Interno')
+#         TippoElemento = request.args.get('TippoElemento')
+#         Tipificacion = request.args.get('Tipificacion')
 
-        cursor.execute(queryobtenerrutaelemento, (Interno,TippoElemento,Tipificacion))
-        #
-        #rows = copiar_carpetas_por_codigos(SEDCodigo,PathRemoto,cursor.fetchall())
+#         cursor.execute(queryobtenerrutaelemento, (Interno,TippoElemento,Tipificacion))
+#         #
+#         #rows = copiar_carpetas_por_codigos(SEDCodigo,PathRemoto,cursor.fetchall())
 
-        columns = [column[0] for column in cursor.description]
-        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+#         columns = [column[0] for column in cursor.description]
+#         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
         
-        return jsonify({"data": rows})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+#         return jsonify({"data": rows})
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
 
 
 
