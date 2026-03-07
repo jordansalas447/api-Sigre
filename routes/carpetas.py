@@ -152,7 +152,7 @@ def ObtenerFotosElemento():
 
 
 @carpetas_bp.route('/ObtenerFotosElementoporinterno', methods=['GET'])
-def ObtenerFotosElemento():
+def ObtenerFotosElementoporinterno():
     try:
         cnxn = get_connection()
         cursor = cnxn.cursor()
