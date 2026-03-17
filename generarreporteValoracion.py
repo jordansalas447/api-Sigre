@@ -23,7 +23,8 @@ def GenerarReporteValorizacion(CodSed,NroOrden=""):
     cnxn = get_connection()
     cursor = cnxn.cursor()
     
-    PathSave = os.path.join(os.path.sep)
+    #PathSave = os.path.join(os.path.sep)
+    PathSave = os.getcwd()
 
     ruta_del_archivo_existente = os.path.join(BASE_DIR, "Reporte", "ReportesSigreValorizacion.xlsx")
     #POSTES
@@ -200,10 +201,10 @@ def GenerarReporteValorizacion(CodSed,NroOrden=""):
             CodigoNodo.append(str(rows[11]).replace('None',''))
             TipoElemento.append(str(rows[10]).replace('None',''))
             Etiqueta.append(str(rows[4]).replace('None',''))
-            BT109.append(str(rows[6]).replace('None',''))
-            BT110.append(str(rows[7]).replace('None',''))
-            BT111.append(str(rows[8]).replace('None',''))
-            BT112.append(str(rows[9]).replace('None',''))
+            BT109.append(int(rows[6]) if rows[6] else 0)
+            BT110.append(int(rows[7]) if rows[7] else 0)
+            BT111.append(int(rows[8]) if rows[8] else 0)
+            BT112.append(int(rows[9]) if rows[9] else 0)
 
     
     results.append(TipoElemento)
@@ -239,18 +240,33 @@ def GenerarReporteValorizacion(CodSed,NroOrden=""):
     
     copiar(hoja,rango_origen_CuadroSumTotal,0,len(results[2]) + 11)
     
-    hoja.cell(row= 11, column=len(results[2])+13, value=TotalBT109)
-    hoja.cell(row= 12, column=len(results[2])+13, value=TotalBT110)
-    hoja.cell(row= 13, column=len(results[2])+13, value=TotalBT111)
-    hoja.cell(row= 14, column=len(results[2])+13, value=TotalBT112)
+    # Crear la fórmula de suma en formato de Excel, por ejemplo, SUM(L7:XX[len(results[2])+13]7)
+    # Lo colocamos en la fila 11 (row=11) y columna (len(results[2])+13)
+    col_inicio = 13
+    col_fin = len(results[2]) + 12
+    col_inicio_letra = get_column_letter(col_inicio)
+    col_fin_letra = get_column_letter(col_fin)
+
+    formula1 = f"=SUM({col_inicio_letra}11:{col_fin_letra}11)"
+    hoja.cell(row=11, column=len(results[2]) + 13, value=formula1)
+
+    formula2 = f"=SUM({col_inicio_letra}12:{col_fin_letra}12)"
+    hoja.cell(row= 12, column=len(results[2])+13, value=formula2)
+
+    formula3 = f"=SUM({col_inicio_letra}13:{col_fin_letra}13)"
+    hoja.cell(row= 13, column=len(results[2])+13, value=formula3)
+    
+    formula4 = f"=SUM({col_inicio_letra}14:{col_fin_letra}14)"
+    hoja.cell(row= 14, column=len(results[2])+13, value=formula4)
 
 
     #cursor.execute("rollback TRANSACTION")
     File = 'Valorizado '+Alimentador[0]+'-'+ CodSed+'.xlsx'
 
     # Paso 5: Guardar el archivo Excel con otro nombre
-    nueva_ruta = PathSave+File
+    nueva_ruta = os.path.join(PathSave, File)
     #nueva_ruta = 'C:/Users/SIGRE/Desktop/Compartido2/Reportes Generados/Reporte '+Alimentador[0]+' '+datetime.now().strftime("%d%m%Y%H%M")+'.xlsx'
+    print("Path:",nueva_ruta)
     wb.save(nueva_ruta)
-
+    
     return nueva_ruta,File

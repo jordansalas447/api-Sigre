@@ -16,6 +16,9 @@ from app.config import get_connection
 from app.globals import TotalDeficienciasxElemento, queryElemetosxSed , queryElemetosNoInspeccionados ,queryEstadodeElementos,queryReporteRevision,ConsInsTotalDesglosado,queryTotalElementoInspeccionadosxDeficiencia
 from app.filtros.queryfiltros import queryElemetosDuplicadosxSed,querySindeffyDeffxSed,queryfiltroArchivosDuplicados
 from app.script import movefilesCorregidoEP, validefileonlyfilecorrectedJson
+import tempfile
+import pandas as pd
+import requests
 #from flask_socketio import SocketIO, emit
 #cnxn = Config.cnxn
 #cursor = cnxn.cursor()
@@ -1174,6 +1177,153 @@ def listar_imagenes():
     ]
 
     return jsonify(imagenes)
+
+
+
+@app.route('/api/genera-excel', methods=['GET'])
+def genera_excel():
+    # Puedes pasar parametros por query, ej:
+    # /api/genera-excel?sed=2087&ubi=YURA
+    codigo_sed = request.args.get('sed', '')
+    #ubicacion_geografica = request.args.get('ubi', 'YURA')
+
+    query = f"""
+    declare @CodigoSed varchar(6) = '{codigo_sed}'
+     select 
+    count(d.DEFI_EstadoCriticidad) as Total,
+    concat(iif(c.CODI_Codigo is null,'',
+    concat(iif(d.DEFI_EstadoCriticidad = 3,'CRITICO','LEVE'),' - ')),
+    iif(c.CODI_Codigo is null,'S/D',c.CODI_Codigo)) as Deficiencia,
+    a.ALIM_Etiqueta as Alimentador,
+    s.SED_Codigo as Subestacion,
+    s.SED_Latitud as Latitud,
+    s.SED_Longitud as Longitud
+    from (
+           -- POSTES
+        SELECT  
+            p.POST_Interno        AS Interno,
+            p.POST_CodigoNodo     AS Codigo,
+            p.POST_Etiqueta AS Etiqueta,
+            p.ALIM_Interno AS Alimentador,
+            p.POST_Subestacion AS Subestacion,
+            'POST' as TipoElemento
+        FROM  Postes p where POST_EsBT = 1 and p.POST_Terceros = 0
+        UNION ALL
+        -- VANOS
+        SELECT  
+            v.VANO_Interno        AS Interno,
+            v.VANO_Codigo         AS Codigo,
+            v.VANO_Etiqueta AS Etiqueta,
+            v.ALIM_Interno AS Alimentador,
+            v.VANO_Subestacion AS Subestacion,
+            'VANO' as TipoElemento
+        FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0
+        ) as el 
+        inner join (select * from Deficiencias where DEFI_Activo = 1) d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
+    left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
+    left join Codigos c on c.CODI_Interno = t.CODI_Interno
+    inner join Seds s on s.SED_Interno = el.Subestacion
+    inner join Alimentadores a on a.ALIM_Interno = el.Alimentador
+    where s.SED_Codigo = @CodigoSed
+    group by 
+    d.DEFI_EstadoCriticidad,iif(c.CODI_Codigo is null,'S/D',c.CODI_Codigo),
+    s.SED_Codigo,
+    a.ALIM_Etiqueta,
+    c.CODI_Codigo,
+    s.SED_Latitud,
+    s.SED_Longitud
+    """
+
+    cnxn = get_connection()
+    df = pd.read_sql(query, cnxn)
+
+    # Crear archivo temporal
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmpfile:
+        filepath = tmpfile.name
+
+    # Crear excel
+    writer = pd.ExcelWriter(filepath, engine="xlsxwriter")
+    # Solo las dos primeras columnas al excel
+    df.iloc[:, :2].to_excel(writer, sheet_name="Datos", index=False, startrow=2)
+
+    workbook = writer.book
+    worksheet = writer.sheets["Datos"]
+
+    # Agregar bordes simples a la tabla insertada (dos primeras columnas)
+    rows, cols = df.iloc[:, :2].shape
+    header_row = 2
+    first_row = header_row + 1
+    last_row = header_row + rows
+
+    border_format = workbook.add_format({'border': 1})
+
+    # Encabezados
+    for col in range(cols):
+        worksheet.write(header_row, col, df.iloc[:, :2].columns[col], border_format)
+    # Datos
+    for row in range(rows):
+        for col in range(cols):
+            worksheet.write(first_row + row, col, df.iloc[row, col], border_format)
+
+    col3_value = None
+    col4_value = None
+    Latitud = None
+    Longitud = None
+
+    # Obtener la primera fila de las otras dos columnas (3ra y 4ta)
+    if len(df) > 0:
+        col3_value = df.iloc[0, 2] if df.shape[1] > 2 else ""
+        col4_value = df.iloc[0, 3] if df.shape[1] > 3 else ""
+        Latitud = df.iloc[0, 4] if df.shape[1] > 4 else ""
+        Longitud = df.iloc[0, 5] if df.shape[1] > 5 else ""
+    else:
+        col3_value = ""
+        col4_value = ""
+
+    
+    
+    url = f"https://nominatim.openstreetmap.org/reverse?lat={Latitud}&lon={Longitud}&format=json"
+
+    print(url)
+
+    headers = {
+        "User-Agent": "Python_API"
+    }
+
+    response = requests.get(url, headers=headers)
+
+    #print(response.status_code)
+    #print(response.text)
+
+    data = response.json()
+    #print(data["address"]["city"])
+    Distrito = data["address"]["city"].upper()
+    # Agregar el título arriba del header
+    titulo = f"CUADRO RESUMEN SEGÚN CRITICIDAD Y DEFICIENCIAS {Distrito} / {col3_value} / {col4_value}"
+    worksheet.merge_range('A1:K1', titulo, workbook.add_format({'bold': True, 'align': 'center', 'font_size': 14}))
+
+    # Cantidad de filas 
+    num_filas = len(df) + 3  # sumamos 2 porque los datos comienzan en la fila 3 (A3), más el header
+
+    # Crear gráfico
+    chart = workbook.add_chart({'type': 'column'})
+    chart.add_series({
+        'name': 'Total',
+        'categories': f'=Datos!$B$4:$B${num_filas}',
+        'values': f'=Datos!$A$4:$A${num_filas}',
+    })
+    chart.set_title({'name': 'Según Criticidad y Deficiencias'})
+    chart.set_x_axis({'name': 'Criticidad - Deficiencia'})
+    chart.set_y_axis({'name': 'Cantidad'})
+
+    # Insertar gráfico
+    worksheet.insert_chart('D3', chart)
+
+    writer.close()
+
+    # Enviar el archivo generado al cliente
+    #try:
+    return send_file(filepath, as_attachment=True, download_name=codigo_sed + " Reporte Total Deficiencia y Criticidad.xlsx")
 
 
 # @socketio.on("connect")

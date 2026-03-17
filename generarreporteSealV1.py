@@ -25,7 +25,8 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH,NroOrden="",SedCode=""):
     
     print(NroOrden)
     
-    PathSave = os.path.join(os.path.sep)
+    #PathSave = os.path.join(os.path.sep)
+    PathSave = os.getcwd()
 
     ruta_del_archivo_existente = os.path.join(BASE_DIR, "Reporte", "ReportesSigre.xlsx")
     #POSTES
@@ -122,10 +123,10 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH,NroOrden="",SedCode=""):
     # Paso 3: Seleccionar la hoja en la que deseas escribir
     # Puedes usar wb['Nombre_de_la_Hoja'] si no es la hoja activa
 
-    hoja['N4'] = 'ARJEN SRL'
-    hoja['N5'] = Alimentador[0] + " / " + SedCode
-    hoja['N6'] = Fecha[0]
-    hoja['N7'] = NroOrden
+    hoja['M4'] = 'ARJEN SRL'
+    hoja['M5'] = Alimentador[0] + " / " + SedCode
+    hoja['M6'] = Fecha[0]
+    hoja['M7'] = NroOrden
     rango_origen_CuadroSumTotal = hoja["B8:I23"] 
     rango_origenColumnas = hoja["M8:M37"]
 
@@ -298,10 +299,10 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH,NroOrden="",SedCode=""):
     # Paso 3: Seleccionar la hoja en la que deseas escribir
      # Puedes usar wb['Nombre_de_la_Hoja'] si no es la hoja activa
 
-    hoja['N4'] = 'ARJEN SRL'
-    hoja['N5'] = Alimentador[0] + " / " + SedCode
-    hoja['N6'] = Fecha[0]
-    hoja['N7'] = NroOrden
+    hoja['M4'] = 'ARJEN SRL'
+    hoja['M5'] = Alimentador[0] + " / " + SedCode
+    hoja['M6'] = Fecha[0]
+    hoja['M7'] = NroOrden
     rango_origen_CuadroSumTotal = hoja["B6:I19"] 
     rango_origenColumnas = hoja["M8:M37"]
 
@@ -390,7 +391,8 @@ def GenerarReporte(CodAlim,PathSave,BASEPATH,NroOrden="",SedCode=""):
     File = Alimentador[0]+' '+datetime.now().strftime("%d%m%Y%H%M")+'.xlsx'
 
     # Paso 5: Guardar el archivo Excel con otro nombre
-    nueva_ruta = PathSave+File
+    #nueva_ruta = PathSave+File
+    nueva_ruta = os.path.join(PathSave, File)
     #nueva_ruta = 'C:/Users/SIGRE/Desktop/Compartido2/Reportes Generados/Reporte '+Alimentador[0]+' '+datetime.now().strftime("%d%m%Y%H%M")+'.xlsx'
     wb.save(nueva_ruta)
 
