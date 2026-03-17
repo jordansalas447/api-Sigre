@@ -101,5 +101,18 @@ DECLARE @Radio FLOAT = ?;
     FROM  Vanos v where v.VANO_EsBT = 1 ) as el
 	left join Seds s on el.Subestacion = s.SED_Interno
 	left join Alimentadores al on al.ALIM_Interno = el.Alimentador
-WHERE (GEOGRAPHY::Point(el.LatitudIni, el.LongitudIni, 4326).STDistance(@Centro) <= @Radio or GEOGRAPHY::Point(el.LatitudFin, el.LongitudFin, 4326).STDistance(@Centro) <= @Radio);
+WHERE 
+(
+    CASE 
+        WHEN el.LatitudIni IS NOT NULL AND el.LongitudIni IS NOT NULL 
+        THEN GEOGRAPHY::Point(el.LatitudIni, el.LongitudIni, 4326).STDistance(@Centro)
+    END <= @Radio
+
+    OR
+
+    CASE 
+        WHEN el.LatitudFin IS NOT NULL AND el.LongitudFin IS NOT NULL 
+        THEN GEOGRAPHY::Point(el.LatitudFin, el.LongitudFin, 4326).STDistance(@Centro)
+    END <= @Radio
+);
 """
