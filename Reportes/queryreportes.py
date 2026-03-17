@@ -24,7 +24,7 @@ CASE
 END
 ,
 t.Tipificacion) as 'CodigoTipificaciondeladeficiencia',
-t.CODI_ComentarioEstandar as 'Descripciondeladeficiencia',
+t.ComentarioDeficiencia as 'Descripciondeladeficiencia',
 t.Criticidad as 'Gravedaddeladeficiencia',
 iif(t.DEFI_Col2 = 'Tercero','TERCERO','SEAL') as 'Responsabilidadgeneracióndeficiencia',
 convert(date,t.DEFI_FecRegistro) as 'FechadeIdentificacion',
@@ -52,6 +52,9 @@ t.DEFI_DistVertical,
 t.DEFI_FecRegistro,
 iif(t.DEFI_Observacion is null, '',t.DEFI_Observacion) as Observacion,
 iif(t.DEFI_Comentario is null, '',t.DEFI_Comentario) as Comentario,
+concat(iif(t.DEFI_Observacion is null, t.DEFI_Comentario,t.DEFI_Observacion),
+iif(t.DEFI_DistHorizontal is null,'',concat(' D.H: ',t.DEFI_DistHorizontal)),
+iif(t.DEFI_DistVertical is null,'',concat(' D.V: ',t.DEFI_DistVertical))) as ComentarioDeficiencia,
 --t.USUA_Nombres,
 t.CODI_ComentarioEstandar,
 t.Ruta as Corregido
