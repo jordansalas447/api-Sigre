@@ -4,7 +4,7 @@ CASE
     WHEN t.CODI_Codigo = '7004' THEN replace(t.Ruta,'/7004/',concat('/7004/',convert(nvarchar,t.Contador),'/'))
       ELSE t.Ruta
 END as Corregido,
-el.Etiqueta,
+t.Etiqueta,
 t.DEFI_Comentario,
 t.DEFI_Observacion
 FROM (
