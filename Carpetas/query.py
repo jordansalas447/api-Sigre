@@ -9,6 +9,7 @@ t.DEFI_Observacion
 FROM (
 select * from (
 select distinct
+el.Etiqueta,
 d.DEFI_CodigoElemento,
 d.DEFI_Activo,
 d.DEFI_Comentario,
