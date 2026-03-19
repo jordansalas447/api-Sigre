@@ -217,6 +217,8 @@ iif( t.Criticidad is null ,convert(nvarchar,el.DEFI_EstadoCriticidad),t.Criticid
 iif(t.Tipificacion is null,convert(nvarchar,el.CODI_Codigo),t.Tipificacion) as Tipificacion,
 iif(t.ALIM_Etiqueta is null,el.DEFI_CodAMT,t.ALIM_Etiqueta) as Alimentador,
 t.SED_Codigo,
+tr.TRAM_Codigo,
+tr.TRAM_Orden,
 iif(el.DEFI_Col2 = 'Terceros',1,0) as Responsable,
 iif(t.NumSuministro is null,el.DEFI_NumSuministro,t.NumSuministro) as NumSuministro ,
 iif(t.DEFI_DistHorizontal is null,el.DEFI_DistHorizontal,t.DEFI_DistHorizontal) as DistanciaHorizontal,
@@ -224,6 +226,7 @@ iif(t.DEFI_DistVertical is null,el.DEFI_DistVertical,t.DEFI_DistVertical) as DEF
 iif(t.DEFI_FecRegistro is null,convert(date,el.DEFI_FecRegistro),convert(date,t.DEFI_FecRegistro)) as FechaRegistro,
 iif(t.Observacion is null,el.DEFI_Observacion,t.Observacion) as Observacion,
 iif(t.Comentario is null,el.DEFI_Comentario,t.Comentario) as Comentario,
+el.DEFI_Col1 as ComentarioIA,
 iif(t.CODI_ComentarioEstandar is null,el.CODI_ComentarioEstandar,t.CODI_ComentarioEstandar) as ComentarioStd,
 iif(t.USUA_Nombres is null, el.USUA_Nombres,t.USUA_Nombres) as Inspector,
 iif(t.Corregido is null,el.Ruta,t.Corregido) as Corregido
@@ -259,6 +262,7 @@ from
         p.POST_Subestacion AS Subestacion,
         '' as NodoInicial,
         '' as NodoFinal,
+        p.TRAM_Interno as Tramo,
         'POST' as TipoElemento
     FROM  Postes p where POST_EsBT = 1 and p.POST_Terceros = 0
     UNION ALL
@@ -271,6 +275,7 @@ from
         v.VANO_Subestacion AS Subestacion,
         v.VANO_NodoInicial as NodoInicial,
         v.VANO_NodoFinal as NodoFinal,
+        v.TRAM_Interno as Tramo,
         'VANO' as TipoElemento
     FROM  Vanos v where v.VANO_EsBT = 1 and v.VANO_Terceros = 0 
   ) as el 
@@ -349,6 +354,7 @@ from (
         p.POST_Etiqueta AS Etiqueta,
         p.ALIM_Interno AS Alimentador,
         p.POST_Subestacion AS Subestacion,
+        p.TRAM_Interno as Tramo,
         'POST' as TipoElemento
     FROM  Postes p where POST_EsBT = 1
     UNION ALL
@@ -359,6 +365,7 @@ from (
         v.VANO_Etiqueta AS Etiqueta,
         v.ALIM_Interno AS Alimentador,
         v.VANO_Subestacion AS Subestacion,
+        v.TRAM_Interno as Tramo,
         'VANO' as TipoElemento
     FROM  Vanos v where v.VANO_EsBT = 1 ) as el
     inner join Seds s on el.Subestacion = s.SED_Interno
@@ -383,6 +390,7 @@ from (
         p.POST_Etiqueta AS Etiqueta,
         p.ALIM_Interno AS Alimentador,
         p.POST_Subestacion AS Subestacion,
+        p.TRAM_Interno as Tramo,
         'POST' as TipoElemento
     FROM  Postes p where POST_EsBT = 1
     UNION ALL
@@ -393,6 +401,7 @@ from (
         v.VANO_Etiqueta AS Etiqueta,
         v.ALIM_Interno AS Alimentador,
         v.VANO_Subestacion AS Subestacion,
+        v.TRAM_Interno as Tramo,
         'VANO' as TipoElemento
     FROM  Vanos v where v.VANO_EsBT = 1
     ) as el 
@@ -409,8 +418,9 @@ from (
 -- WHERE t.NombreArchivo NOT LIKE '%.m4a'
 ) as t on t.Codigo = el.Codigo and t.TipoElemento = el.TipoElemento and t.DEFI_Interno = el.DEFI_Interno
 inner join Seds s on s.SED_Interno = el.Subestacion
+left join Tramos tr on tr.TRAM_Interno = el.Tramo
 where s.SED_Codigo = ?
-order by iif(t.ALIM_Etiqueta is null,el.DEFI_CodAMT,t.ALIM_Etiqueta) desc
+order by tr.TRAM_Codigo,tr.TRAM_Orden
 """
 
 
