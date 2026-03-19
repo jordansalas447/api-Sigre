@@ -13,6 +13,7 @@ t.NumSuministro as 'SuministrodeReferencia',
 t.NodoInicial as Estructura1,
 t.NodoFinal as Estructura2,
 t.Codigo as 'CodigoInspeccionado',
+iif(t.Etiqueta='.','',t.Etiqueta) as 'Etiqueta',
 CASE 
     WHEN t.TipoElemento = 'POST' THEN 'EBT'
     ELSE 'CBT'
