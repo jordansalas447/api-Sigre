@@ -1014,71 +1014,135 @@ def GetLatLongPost():
 @app.route('/GetLatLongVanos', methods=['GET'])
 def GetLatLongVanos():
     try:
-
-        cnxn = get_connection()
-        cursor = cnxn.cursor()
-
         sed_codigo = request.args.get('sedCodigo')
 
         if not sed_codigo:
             return jsonify({"error": "sedCodigo es requerido"}), 400
 
-        # ----------- CONSULTA 1 -------------------
+        # Redis cache key con sed_codigo para unicidad
+        cache_key = f"GetLatLongVanos:{sed_codigo}"
+
+        # Intentar obtener de Redis primero y retornar inmediatamente si existe
+        cached = redis_client.get(cache_key)
+        if cached:
+            data = json.loads(cached)
+
+            # Lanzar la actualización como tarea en segundo plano (sin bloquear)
+            def refresh_cache():
+                try:
+                    cnxn = get_connection()
+                    cursor = cnxn.cursor()
+                    cursor.execute("""
+                        select 
+                            t.VANO_Interno as Interno,
+                            t.VANO_Etiqueta as Etiqueta,
+                            t.VANO_Codigo as Codigo,
+                            t.VANO_LatitudIni,
+                            t.VANO_LongitudIni,
+                            t.VANO_LatitudFin,
+                            t.VANO_LongitudFin,
+                            t.VANO_Terceros as Terceros,
+                            t.VANO_Inspeccionado as Inspeccinado, 
+                            t.TipoElemento,
+                            tr.TRAM_Orden,
+                            tr.TRAM_Codigo,
+                            d.DEFI_Estado
+                        from (
+                            select 
+                                V.* , 
+                                s.SED_Codigo,
+                                'VANO' as TipoElemento
+                            from Vanos V
+                            inner join Seds s on s.SED_Interno = V.VANO_Subestacion
+                        ) as t
+                        left join (select * from Deficiencias where DEFI_Activo = 1) as d on d.DEFI_IdElemento = t.VANO_Interno and t.TipoElemento = d.DEFI_TipoElemento
+                        left join (select * from Tramos where TRAM_Activo = 1) tr on tr.TRAM_Interno = t.TRAM_Interno
+                        where t.SED_Codigo = ? and t.VANO_Terceros = 0
+                        group by 
+                            t.VANO_Interno,
+                            t.VANO_Etiqueta,
+                            t.VANO_Codigo,
+                            t.VANO_LatitudIni,
+                            t.VANO_LongitudIni,
+                            t.VANO_LatitudFin,
+                            t.VANO_LongitudFin,
+                            t.VANO_Terceros,
+                            t.VANO_Inspeccionado, 
+                            t.TipoElemento,
+                            tr.TRAM_Orden,
+                            tr.TRAM_Codigo,
+                            d.DEFI_Estado
+                    """, sed_codigo)
+                    columns = [column[0] for column in cursor.description]
+                    rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+                    redis_client.setex(cache_key, 3600, json.dumps(rows))
+                except Exception:
+                    pass  # Opcional: logging
+            t = threading.Thread(target=refresh_cache)
+            t.start()
+
+            return jsonify({
+                "data": data
+            })
+
+        # Si no hay cache en Redis, ir a la base de datos, guardar en cache y retornar
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
         cursor.execute("""
- select 
-t.VANO_Interno as Interno,
-t.VANO_Etiqueta as Etiqueta,
-t.VANO_Codigo as Codigo,
-t.VANO_LatitudIni,
-t.VANO_LongitudIni,
-t.VANO_LatitudFin,
-t.VANO_LongitudFin,
-t.VANO_Terceros as Terceros,
-t.VANO_Inspeccionado as Inspeccinado, 
-t.TipoElemento,
-tr.TRAM_Orden,
-tr.TRAM_Codigo,
-d.DEFI_Estado
-from (
-select 
-V.* , 
-s.SED_Codigo,
-'VANO' as TipoElemento
-from Vanos V
-inner join Seds s on s.SED_Interno = V.VANO_Subestacion
-) as t
-left join (select * from Deficiencias where DEFI_Activo = 1) as d on d.DEFI_IdElemento = t.VANO_Interno and t.TipoElemento = d.DEFI_TipoElemento
-left join (select * from Tramos where TRAM_Activo = 1) tr on tr.TRAM_Interno = t.TRAM_Interno
-where t.SED_Codigo = ? and t.VANO_Terceros = 0
-group by 
-t.VANO_Interno,
-t.VANO_Etiqueta,
-t.VANO_Codigo,
-t.VANO_LatitudIni,
-t.VANO_LongitudIni,
-t.VANO_LatitudFin,
-t.VANO_LongitudFin,
-t.VANO_Terceros,
-t.VANO_Inspeccionado, 
-t.TipoElemento,
-tr.TRAM_Orden,
-tr.TRAM_Codigo,
-d.DEFI_Estado
-""", sed_codigo)
+            select 
+                t.VANO_Interno as Interno,
+                t.VANO_Etiqueta as Etiqueta,
+                t.VANO_Codigo as Codigo,
+                t.VANO_LatitudIni,
+                t.VANO_LongitudIni,
+                t.VANO_LatitudFin,
+                t.VANO_LongitudFin,
+                t.VANO_Terceros as Terceros,
+                t.VANO_Inspeccionado as Inspeccinado, 
+                t.TipoElemento,
+                tr.TRAM_Orden,
+                tr.TRAM_Codigo,
+                d.DEFI_Estado
+            from (
+                select 
+                    V.* , 
+                    s.SED_Codigo,
+                    'VANO' as TipoElemento
+                from Vanos V
+                inner join Seds s on s.SED_Interno = V.VANO_Subestacion
+            ) as t
+            left join (select * from Deficiencias where DEFI_Activo = 1) as d on d.DEFI_IdElemento = t.VANO_Interno and t.TipoElemento = d.DEFI_TipoElemento
+            left join (select * from Tramos where TRAM_Activo = 1) tr on tr.TRAM_Interno = t.TRAM_Interno
+            where t.SED_Codigo = ? and t.VANO_Terceros = 0
+            group by 
+                t.VANO_Interno,
+                t.VANO_Etiqueta,
+                t.VANO_Codigo,
+                t.VANO_LatitudIni,
+                t.VANO_LongitudIni,
+                t.VANO_LatitudFin,
+                t.VANO_LongitudFin,
+                t.VANO_Terceros,
+                t.VANO_Inspeccionado, 
+                t.TipoElemento,
+                tr.TRAM_Orden,
+                tr.TRAM_Codigo,
+                d.DEFI_Estado
+        """, sed_codigo)
         
         columns = [column[0] for column in cursor.description]
         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        redis_client.setex(cache_key, 3600, json.dumps(rows))
 
         return jsonify({
             "data": rows
         })
-        
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500 
 
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
     #finally:
-        #cursor.close()
-        #cnxn.close() 
+        cursor.close()
+        #cnxn.close()
 
 
 @app.route('/reporteinspectores', methods=['POST','GET'])
