@@ -7,6 +7,7 @@ from app.routes.busqueda import busqueda_bp
 from app.routes.elemento import elemento_bp
 from app.routes.filtros import filtros_bp
 from app.routes.opciones import opciones_bp
+from app.routes.deficiencia import deficiencia_bp
 from app.routes.reportes import reportes_bp
 from app.routes.rama import rama_bp
 from app.routes.carpetas import carpetas_bp
@@ -829,6 +830,7 @@ def listardeficienciasxelemento():
         
         queryBuscarElemento = """
             SELECT 
+                d.DEFI_Interno,
                 d.DEFI_Estado,
                 d.DEFI_FecRegistro,
                 d.DEFI_EstadoCriticidad,
@@ -1477,6 +1479,7 @@ app.register_blueprint(estadisticas_bp)
 app.register_blueprint(busqueda_bp)
 app.register_blueprint(elemento_bp)
 app.register_blueprint(opciones_bp)
+app.register_blueprint(deficiencia_bp)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
