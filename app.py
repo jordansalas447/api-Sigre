@@ -21,6 +21,7 @@ import tempfile
 import pandas as pd
 import requests
 import json
+import threading
 #from flask_socketio import SocketIO, emit
 #cnxn = Config.cnxn
 #cursor = cnxn.cursor()
@@ -888,57 +889,112 @@ def GetLatLongPost():
         # Redis cache key con sed_codigo para unicidad
         cache_key = f"GetLatLongPost:{sed_codigo}"
 
-        # Intentar obtener de Redis
+        # Intentar obtener de Redis primero y retornar inmediatamente si existe
         cached = redis_client.get(cache_key)
         if cached:
             data = json.loads(cached)
+            # Lanzar la actualización como tarea en segundo plano -- pero como Flask básico no tiene background tasks,
+            # simplemente lanzamos sin esperar el resultado (no afecta la experiencia del usuario).
+
+            def refresh_cache():
+                try:
+                    cnxn = get_connection()
+                    cursor = cnxn.cursor()
+                    cursor.execute("""
+                      SELECT
+                            t.POST_Interno        AS Interno,
+                            t.POST_Etiqueta       AS Etiqueta,
+                            t.POST_CodigoNodo     AS Codigo,
+                            t.POST_Latitud        AS Latitud,
+                            t.POST_Longitud       AS Longitud,
+                            t.POST_Terceros       AS Terceros,
+                            t.POST_Inspeccionado  AS Inspeccinado,
+                            t.TipoElemento,
+                            tr.TRAM_Orden,
+                            tr.TRAM_Codigo,
+                            d.DEFI_Estado
+                        FROM (
+                            SELECT 
+                            p.*, 
+                            s.SED_Codigo , 
+                            'POST' as TipoElemento
+                            FROM Postes p
+                            INNER JOIN Seds s 
+                                ON s.SED_Interno = p.POST_Subestacion
+                        ) AS t
+                        left join (select * from Deficiencias where DEFI_Activo = 1) as d on d.DEFI_IdElemento = t.POST_Interno and t.TipoElemento = d.DEFI_TipoElemento
+                        left join (select * from Tramos where TRAM_Activo = 1) tr on t.TRAM_Interno = tr.TRAM_Interno
+                        WHERE t.SED_Codigo = ? and t.POST_Terceros = 0
+                        group by 
+                        t.POST_Interno,
+                        t.POST_Etiqueta,
+                        t.POST_CodigoNodo,
+                        t.POST_Latitud,
+                        t.POST_Longitud,
+                        t.POST_Terceros,
+                        t.POST_Inspeccionado,
+                        t.TipoElemento,
+                        tr.TRAM_Orden,
+                        tr.TRAM_Codigo,
+                        t.TRAM_Interno,
+                        d.DEFI_Estado
+                    """, sed_codigo)
+                    columns = [column[0] for column in cursor.description]
+                    rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+                    redis_client.setex(cache_key, 3600, json.dumps(rows))
+                except Exception as ex:
+                    # Se puede agregar logging aquí
+                    pass
+            t = threading.Thread(target=refresh_cache)
+            t.start()
+
             return jsonify({
                 "data": data
             })
 
-        # Si no hay cache, ir a la base de datos
+        # Si no hay cache, ir a la base de datos, guardar y retornar
         cnxn = get_connection()
         cursor = cnxn.cursor()
 
         cursor.execute("""
-  SELECT
-        t.POST_Interno        AS Interno,
-        t.POST_Etiqueta       AS Etiqueta,
-        t.POST_CodigoNodo     AS Codigo,
-        t.POST_Latitud        AS Latitud,
-        t.POST_Longitud       AS Longitud,
-        t.POST_Terceros       AS Terceros,
-        t.POST_Inspeccionado  AS Inspeccinado,
-        t.TipoElemento,
-        tr.TRAM_Orden,
-        tr.TRAM_Codigo,
-        d.DEFI_Estado
-    FROM (
-        SELECT 
-        p.*, 
-        s.SED_Codigo , 
-        'POST' as TipoElemento
-        FROM Postes p
-        INNER JOIN Seds s 
-            ON s.SED_Interno = p.POST_Subestacion
-    ) AS t
-    left join (select * from Deficiencias where DEFI_Activo = 1) as d on d.DEFI_IdElemento = t.POST_Interno and t.TipoElemento = d.DEFI_TipoElemento
-    left join (select * from Tramos where TRAM_Activo = 1) tr on t.TRAM_Interno = tr.TRAM_Interno
-    WHERE t.SED_Codigo = ? and t.POST_Terceros = 0
-    group by 
-    t.POST_Interno,
-    t.POST_Etiqueta,
-    t.POST_CodigoNodo,
-    t.POST_Latitud,
-    t.POST_Longitud,
-    t.POST_Terceros,
-    t.POST_Inspeccionado,
-    t.TipoElemento,
-    tr.TRAM_Orden,
-    tr.TRAM_Codigo,
-    t.TRAM_Interno,
-    d.DEFI_Estado
- """, sed_codigo)
+          SELECT
+                t.POST_Interno        AS Interno,
+                t.POST_Etiqueta       AS Etiqueta,
+                t.POST_CodigoNodo     AS Codigo,
+                t.POST_Latitud        AS Latitud,
+                t.POST_Longitud       AS Longitud,
+                t.POST_Terceros       AS Terceros,
+                t.POST_Inspeccionado  AS Inspeccinado,
+                t.TipoElemento,
+                tr.TRAM_Orden,
+                tr.TRAM_Codigo,
+                d.DEFI_Estado
+            FROM (
+                SELECT 
+                p.*, 
+                s.SED_Codigo , 
+                'POST' as TipoElemento
+                FROM Postes p
+                INNER JOIN Seds s 
+                    ON s.SED_Interno = p.POST_Subestacion
+            ) AS t
+            left join (select * from Deficiencias where DEFI_Activo = 1) as d on d.DEFI_IdElemento = t.POST_Interno and t.TipoElemento = d.DEFI_TipoElemento
+            left join (select * from Tramos where TRAM_Activo = 1) tr on t.TRAM_Interno = tr.TRAM_Interno
+            WHERE t.SED_Codigo = ? and t.POST_Terceros = 0
+            group by 
+            t.POST_Interno,
+            t.POST_Etiqueta,
+            t.POST_CodigoNodo,
+            t.POST_Latitud,
+            t.POST_Longitud,
+            t.POST_Terceros,
+            t.POST_Inspeccionado,
+            t.TipoElemento,
+            tr.TRAM_Orden,
+            tr.TRAM_Codigo,
+            t.TRAM_Interno,
+            d.DEFI_Estado
+        """, sed_codigo)
         
         columns = [column[0] for column in cursor.description]
         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
