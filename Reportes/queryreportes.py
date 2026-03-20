@@ -109,7 +109,7 @@ from (
         '' as NodoInicial,
         '' as NodoFinal,
         'POST' as TipoElemento
-    FROM  Postes p where POST_EsBT = 1 and POST_Terceros = 1
+    FROM  Postes p where POST_EsBT = 1 and POST_Terceros = 0
     UNION ALL
     -- VANOS
     SELECT  
@@ -121,7 +121,7 @@ from (
         v.VANO_NodoInicial as NodoInicial,
         v.VANO_NodoFinal as NodoFinal,
         'VANO' as TipoElemento
-    FROM  Vanos v where v.VANO_EsBT = 1 and VANO_Terceros = 1 ) as el
+    FROM  Vanos v where v.VANO_EsBT = 1 and VANO_Terceros = 0 ) as el
     inner join Seds s on el.Subestacion = s.SED_Interno
     left join (select * from Deficiencias where DEFI_Activo = 1 and TIPI_Interno <> 0) d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
     left join Tipificaciones t on t.TIPI_Interno = d.TIPI_Interno
@@ -145,7 +145,7 @@ from (
         p.ALIM_Interno AS Alimentador,
         p.POST_Subestacion AS Subestacion,
         'POST' as TipoElemento
-    FROM  Postes p where POST_EsBT = 1 and POST_Terceros = 1
+    FROM  Postes p where POST_EsBT = 1 and POST_Terceros = 0
     UNION ALL
     -- VANOS
     SELECT  
@@ -155,7 +155,7 @@ from (
         v.ALIM_Interno AS Alimentador,
         v.VANO_Subestacion AS Subestacion,
         'VANO' as TipoElemento
-    FROM  Vanos v where v.VANO_EsBT = 1 and VANO_Terceros = 1
+    FROM  Vanos v where v.VANO_EsBT = 1 and VANO_Terceros = 0
     ) as el 
     left join (select * from Deficiencias where DEFI_Activo = 1 and TIPI_Interno <> 0) d on d.DEFI_IdElemento = el.Interno and d.DEFI_TipoElemento = el.TipoElemento
     inner join Seds s on s.SED_Interno = el.Subestacion
