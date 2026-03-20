@@ -16,9 +16,11 @@ from app.config import get_connection
 from app.globals import TotalDeficienciasxElemento, queryElemetosxSed , queryElemetosNoInspeccionados ,queryEstadodeElementos,queryReporteRevision,ConsInsTotalDesglosado,queryTotalElementoInspeccionadosxDeficiencia
 from app.filtros.queryfiltros import queryElemetosDuplicadosxSed,querySindeffyDeffxSed,queryfiltroArchivosDuplicados
 from app.script import movefilesCorregidoEP, validefileonlyfilecorrectedJson
+from app.redis_client import redis_client
 import tempfile
 import pandas as pd
 import requests
+import json
 #from flask_socketio import SocketIO, emit
 #cnxn = Config.cnxn
 #cursor = cnxn.cursor()
@@ -878,16 +880,26 @@ def listardeficienciasxelemento():
 @app.route('/GetLatLongPost', methods=['GET'])
 def GetLatLongPost():
     try:
-
-        cnxn = get_connection()
-        cursor = cnxn.cursor()
-
         sed_codigo = request.args.get('sedCodigo')
 
         if not sed_codigo:
             return jsonify({"error": "sedCodigo es requerido"}), 400
 
-        # ----------- CONSULTA 1 -------------------
+        # Redis cache key con sed_codigo para unicidad
+        cache_key = f"GetLatLongPost:{sed_codigo}"
+
+        # Intentar obtener de Redis
+        cached = redis_client.get(cache_key)
+        if cached:
+            data = json.loads(cached)
+            return jsonify({
+                "data": data
+            })
+
+        # Si no hay cache, ir a la base de datos
+        cnxn = get_connection()
+        cursor = cnxn.cursor()
+
         cursor.execute("""
   SELECT
         t.POST_Interno        AS Interno,
@@ -931,13 +943,14 @@ def GetLatLongPost():
         columns = [column[0] for column in cursor.description]
         rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
+        redis_client.setex(cache_key, 3600, json.dumps(rows))
+
         return jsonify({
             "data": rows
         })
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
     #finally:
         cursor.close()
         #cnxn.close()
