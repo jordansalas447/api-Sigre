@@ -260,6 +260,10 @@ from
         p.POST_Etiqueta AS Etiqueta,
         p.ALIM_Interno AS Alimentador,
         p.POST_Subestacion AS Subestacion,
+        p.POST_Latitud as LatitudI,
+        p.POST_Longitud as LongitudI,
+        '0' as LatitudF,
+        '0' as LongitudF,
         '' as NodoInicial,
         '' as NodoFinal,
         p.TRAM_Interno as Tramo,
@@ -273,6 +277,10 @@ from
         v.VANO_Etiqueta AS Etiqueta,
         v.ALIM_Interno AS Alimentador,
         v.VANO_Subestacion AS Subestacion,
+        v.VANO_LatitudIni as LatitudI,
+        v.VANO_LongitudIni as LongitudI,
+        v.VANO_LatitudFin as LatitudF,
+        v.VANO_LongitudFin as LongitudF,
         v.VANO_NodoInicial as NodoInicial,
         v.VANO_NodoFinal as NodoFinal,
         v.TRAM_Interno as Tramo,
@@ -354,6 +362,10 @@ from (
         p.POST_Etiqueta AS Etiqueta,
         p.ALIM_Interno AS Alimentador,
         p.POST_Subestacion AS Subestacion,
+        p.POST_Latitud as LatitudI,
+        p.POST_Longitud as LongitudI,
+        '0' as LatitudF,
+        '0' as LongitudF,
         p.TRAM_Interno as Tramo,
         'POST' as TipoElemento
     FROM  Postes p where POST_EsBT = 1
@@ -365,6 +377,10 @@ from (
         v.VANO_Etiqueta AS Etiqueta,
         v.ALIM_Interno AS Alimentador,
         v.VANO_Subestacion AS Subestacion,
+        v.VANO_LatitudIni as LatitudI,
+        v.VANO_LongitudIni as LongitudI,
+        v.VANO_LatitudFin as LatitudF,
+        v.VANO_LongitudFin as LongitudF,
         v.TRAM_Interno as Tramo,
         'VANO' as TipoElemento
     FROM  Vanos v where v.VANO_EsBT = 1 ) as el
@@ -390,6 +406,10 @@ from (
         p.POST_Etiqueta AS Etiqueta,
         p.ALIM_Interno AS Alimentador,
         p.POST_Subestacion AS Subestacion,
+        p.POST_Latitud as LatitudI,
+        p.POST_Longitud as LongitudI,
+        '0' as LatitudF,
+        '0' as LongitudF,
         p.TRAM_Interno as Tramo,
         'POST' as TipoElemento
     FROM  Postes p where POST_EsBT = 1
@@ -401,6 +421,10 @@ from (
         v.VANO_Etiqueta AS Etiqueta,
         v.ALIM_Interno AS Alimentador,
         v.VANO_Subestacion AS Subestacion,
+        v.VANO_LatitudIni as LatitudI,
+        v.VANO_LongitudIni as LongitudI,
+        v.VANO_LatitudFin as LatitudF,
+        v.VANO_LongitudFin as LongitudF,
         v.TRAM_Interno as Tramo,
         'VANO' as TipoElemento
     FROM  Vanos v where v.VANO_EsBT = 1
@@ -420,7 +444,7 @@ from (
 inner join Seds s on s.SED_Interno = el.Subestacion
 left join Tramos tr on tr.TRAM_Interno = el.Tramo
 where s.SED_Codigo = ?
-order by tr.TRAM_Codigo,tr.TRAM_Orden
+order by el.LatitudI , el.LongitudI
 """
 
 
