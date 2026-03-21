@@ -214,6 +214,8 @@ el.DEFI_Latitud,
 el.DEFI_Longitud,
 el.LatitudI , 
 el.LongitudI,
+el.LatitudF,
+el.LongitudF,
 --el.DEFI_Estado,
 iif( t.Criticidad is null ,convert(nvarchar,el.DEFI_EstadoCriticidad),t.Criticidad) as Criticidad,
 iif(t.Tipificacion is null,convert(nvarchar,el.CODI_Codigo),t.Tipificacion) as Tipificacion,
@@ -446,7 +448,7 @@ from (
 inner join Seds s on s.SED_Interno = el.Subestacion
 left join Tramos tr on tr.TRAM_Interno = el.Tramo
 where s.SED_Codigo = ?
-order by el.LatitudI , el.LongitudI
+order by el.LatitudI , el.LatitudF , el.LongitudI , el.LongitudF
 """
 
 
